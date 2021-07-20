@@ -1,22 +1,15 @@
-import React from 'react';
-import { makeStyles } from '@material-ui/core/styles';
-import Grid from '@material-ui/core/Grid';
-import Card from '@material-ui/core/Card';
-import CardActions from '@material-ui/core/CardActions';
-import CardContent from '@material-ui/core/CardContent';
-import Button from '@material-ui/core/Button';
-import Typography from '@material-ui/core/Typography';
+import React, { useState } from 'react';
+import { makeStyles, styled } from '@material-ui/core/styles';
+import {Grid, CircularProgress, Card, Fab, CardActions, CardContent, Button, Typography, Container, Divider } from '@material-ui/core';
 import CloudDoneIcon from '@material-ui/icons/CloudDone';
 import CloudUploadOutlinedIcon from '@material-ui/icons/CloudUploadOutlined';
-import { Container } from '@material-ui/core';
-import Divider from '@material-ui/core/Divider';
 import FiberManualRecordOutlinedIcon from '@material-ui/icons/FiberManualRecordOutlined';
 import LocationOnOutlinedIcon from '@material-ui/icons/LocationOnOutlined';
 import ArrowForwardIcon from '@material-ui/icons/ArrowForward';
 import AccountCircleOutlinedIcon from '@material-ui/icons/AccountCircleOutlined';
 import CategoryIcon from '@material-ui/icons/Category';
 import EventIcon from '@material-ui/icons/Event';
-import { hexToDate, hexToInt, hexToString, WEI_VAL } from '../helper';
+import { hexToDate, hexToInt, hexToPortName, WEI_VAL, readAllFiles, hashObjects, cargoTypes } from '../helper';
 
 const useStyles = makeStyles({
   root: {
@@ -33,15 +26,50 @@ const useStyles = makeStyles({
   pos: {
     marginBottom: 12,
   },
+  buttonProgress: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    marginTop: -12,
+    marginLeft: -12,
+  },
+  cardPadding: {
+    marginTop: 5,
+    marginBottom: 10,
+  },
 
 });
 
+
 export default function AvailableOrder(props) {
   const classes = useStyles();
+  
+  const [credentials, setCredentials] = useState([]);
+  const [loadingFiles, setLoadingFiles] = useState(false);
+
+  const handleChange = (e) => {
+    setLoadingFiles(true);
+
+    let AllFiles = [];
+    [...e.target.files].map(file => AllFiles.push(file));
+    let parsedFiles = []
+    readAllFiles(AllFiles)
+      .then(results => {
+        for (let result of results) {
+            parsedFiles.push(JSON.parse(result));
+        }
+        setCredentials(parsedFiles);
+      })
+      .catch(err => {
+        console.error(err);
+      });
+    
+    setLoadingFiles(false);
+  };
 
   return (
-    <Container>
-      <Card className={classes.root}>
+    <Container className={classes.cardPadding}>
+      <Card className={classes.root} elevation={3}>
         <CardContent>
           <Grid container spacing={1}>
             <Grid  
@@ -62,7 +90,7 @@ export default function AvailableOrder(props) {
                   </Grid>
                   <Grid>
                     <Typography color="textSecondary" noWrap>
-                        {props.orderData.originPort}
+                        {hexToPortName(props.orderData.originPort)}
                     </Typography>
                   </Grid>
                 </Grid>
@@ -77,7 +105,7 @@ export default function AvailableOrder(props) {
                   </Grid>
                   <Grid>
                     <Typography color="textSecondary">
-                      {hexToString(props.orderData.destinationPort)}
+                      {hexToPortName(props.orderData.destinationPort)}
                     </Typography>
                   </Grid>
                 </Grid>    
@@ -101,22 +129,46 @@ export default function AvailableOrder(props) {
                   - Boating licence
                 </Typography>
               </Grid>
+              {credentials.length !== 0 && 
+                <Grid item sm={8} xs={12} container>
+                  <Typography variant="body2" component="h6">
+                    {hashObjects(credentials)}
+                  </Typography>
+                </Grid>
+              }
               <Grid item xs={12} container>
-                <Button
-                  variant="contained"
+              <label htmlFor="upload-cred">
+                <input
+                  style={{ display: 'none' }}
+                  id="upload-cred"
+                  name="upload-cred"
+                  type="file"
+                  multiple
+                  onChange={(e) => handleChange(e)}
+                />
+
+                <Fab
                   color="secondary"
-                  className={classes.button}
-                  startIcon={<CloudUploadOutlinedIcon />}
-                  style={{ marginTop: 50 }}
+                  size="medium"
+                  component="span"
+                  aria-label="upload"
+                  variant="extended"
+                  disabled={loadingFiles}
                 >
-                  Upload Credential(s)
-                </Button>
+                  {credentials.length === 0 ? 
+                  <CloudUploadOutlinedIcon style={{ marginRight: 7 }}/> :
+                  <CloudDoneIcon style={{ marginRight: 7 }}/>
+                  }
+                  Upload credential(s)
+                  </Fab>
+                  {loadingFiles && <CircularProgress size={24} className={classes.buttonProgress} />}
+                </label>
               </Grid>
             </Grid>
             <Grid item sm={6} xs={12} container spacing={1}>
               <Grid item xs={12}>
                 <Typography variant="subtitle1" style={{ fontSize: 20 }}>
-                  Type: {props.orderData.cargoType} 
+                  Cargo type: {cargoTypes.get(props.orderData.cargoType)} 
                 </Typography>
               </Grid>
               <Grid item xs={12}>
@@ -128,14 +180,17 @@ export default function AvailableOrder(props) {
           </Grid>
         </CardContent>
         <CardActions>
-          <Button
-            variant="contained"
-            color="primary"
-            className={classes.button}
-            startIcon={<AccountCircleOutlinedIcon />}
-          >
-            Apply for operator
-          </Button>
+          <Grid container direction="row-reverse">
+            <Button
+              variant="contained"
+              color="primary"
+              className={classes.button}
+              startIcon={<AccountCircleOutlinedIcon />}
+              disabled={credentials.length === 0}
+            >
+              Apply for operator
+            </Button>
+          </Grid>
         </CardActions>
       </Card>
     </Container>

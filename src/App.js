@@ -13,6 +13,7 @@ import IconButton from '@material-ui/core/IconButton';
 import DirectionsBoatTwoToneIcon from '@material-ui/icons/DirectionsBoatTwoTone';
 import TabPanel from './components/TabPanel';
 import AvailableOrdersList from './components/AvailableOrdersList';
+import { Grid } from '@material-ui/core';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -21,9 +22,11 @@ const useStyles = makeStyles((theme) => ({
   icon: {
     marginRight: theme.spacing(2),
   },
-  title: {
-    flexGrow: 1,
-  },
+  content: {
+    marginTop: 50,
+    display: 'flex',
+    justifyContent: "center"
+  }
 }));
 
 export default function App() {
@@ -32,8 +35,8 @@ export default function App() {
 
   return (
     <Router>
-      <div>
-        <div className={classes.root}>
+      <Grid container>
+        <Grid item xs={12} className={classes.root}>
         <AppBar position="static">
           <Toolbar variant="dense">
             <IconButton 
@@ -52,21 +55,21 @@ export default function App() {
           </Toolbar>
         </AppBar>
         <TabPanel/>
-      </div>
-        {/* A <Switch> looks through its children <Route>s and
-            renders the first one that matches the current URL. */}
-        <Switch>
-          <Route path="/create">
-            <OrderForm />
-          </Route>
-          <Route path="/orders">
-            <AvailableOrdersList />
-          </Route>
-          <Route path="/myorders">
-            <MyOrders />
-          </Route>
-        </Switch>
-      </div>
+      </Grid>
+        <Grid item xs={12} className={classes.content}>
+          <Switch>
+            <Route path="/create">
+              <OrderForm />
+            </Route>
+            <Route path="/orders">
+              <AvailableOrdersList />
+            </Route>
+            <Route path="/myorders">
+              <MyOrders />
+            </Route>
+          </Switch>
+        </Grid>  
+      </Grid>
     </Router>
   );
 }

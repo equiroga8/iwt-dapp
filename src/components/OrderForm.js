@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
 import InputLabel from '@material-ui/core/InputLabel';
 import MenuItem from '@material-ui/core/MenuItem';
@@ -14,30 +14,41 @@ import {
 } from '@material-ui/pickers';
 import TextField from '@material-ui/core/TextField';
 import InputAdornment from '@material-ui/core/InputAdornment';
-import AccountCircle from '@material-ui/icons/AccountCircle';
+import LocalAtmIcon from '@material-ui/icons/LocalAtm';
 import Button from '@material-ui/core/Button';
 import TransportationOrderFactory from '../artifacts/contracts/TransportationOrderFactory.sol/TransportationOrderFactory.json';
 import { ethers } from 'ethers';
 import { WEI_VAL, codeToPort } from '../helper';
+import { Typography, CircularProgress } from '@material-ui/core';
+import Alert from '@material-ui/lab/Alert';
+
 
 const FACT_ADDR = '0x5fbdb2315678afecb367f032d93f642f64180aa3';
 
 const useStyles = makeStyles((theme) => ({
   formControl: {
     margin: theme.spacing(1),
-    minWidth: 120,
-    maxWidth: 460,
+    paddingTop: 10,
+    paddingBottom: 16,
+    width: '100%'
   },
   inputWrapper: {
-    width: '95%',
-    marginLeft: 10,
+    width: '90%',
   },
   input: {
     width: '100%',
   },
-  test: {
-    width: '100%',
-    background: 'red',
+  title: {
+    width: '90%',
+    marginLeft: 10,
+    marginTop: 10,
+  },
+  buttonProgress: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    marginTop: -12,
+    marginLeft: -12,
   },
 }));
 
@@ -47,28 +58,58 @@ export default function OrderForm() {
 
   const [originPort, setOriginPort] = useState('');
   const [destinationPort, setDestinationPort] = useState('');
-  const [payout, setPayout] = useState('');
-  const [deadline, setDeadline] = useState(new Date());
-  const [cargoType, setCargoType] = useState('');
- 
+  const [payout, setPayout] = useState(undefined);
+  const [deadline, setDeadline] = useState(new Date((new Date()).getTime() + (10 * 86400000)));
+  const [cargoType, setCargoType] = useState(-1);
+  const [cargoLoad, setCargoLoad] = useState();
+
+  const [contract, setContract] = useState();
+  const [gasPrice, setGasPrice] = useState();
+
+  const [status, setStatus] = useState();
+  const [loading, setLoading] = useState(false);
 
   const classes = useStyles();
+
+  useEffect(() => {
+    const requestAccount = async () => {
+      await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const currentGasPrice = await provider.getGasPrice();
+      const signer = provider.getSigner();
+      const contract = new ethers.Contract(FACT_ADDR, TransportationOrderFactory.abi, signer);
+      let estimatedGasPrice = await contract.estimateGas.createTransportOrder(
+        ethers.utils.hexlify([1, 2, 3, 4, 5]),
+        ethers.utils.hexlify([1, 2, 3, 4, 5]),
+        deadline.getTime(),
+        0,
+        {value: '0' }
+      );
+      setContract(contract);
+      setGasPrice(estimatedGasPrice * currentGasPrice / WEI_VAL);
+    }
+    requestAccount();
+    
+  },);
 
   const handleDateChange = (date) => {
     setDeadline(date);
   };
 
-  const requestAccount = async () => {
-    await window.ethereum.request({ method: 'eth_requestAccounts' });
-  }
-
+  const resetState = () => {
+    setOriginPort('');
+    setDestinationPort('');
+    setPayout('');
+    setDeadline(new Date((new Date()).getTime() + (10 * 86400000)));
+    setCargoType(-1);
+    setCargoLoad('');
+  };
+  
   const submitOrder = async () => {
     let value = payout * WEI_VAL;
-    await requestAccount()
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
-    const contract = new ethers.Contract(FACT_ADDR, TransportationOrderFactory.abi, signer);
-    const transaction = await contract
+    setLoading(true);
+    try {
+      const transaction = await contract
       .createTransportOrder(
         ethers.utils.hexlify(originPort.split('').map ((c) => c.charCodeAt (0))),
         ethers.utils.hexlify(destinationPort.split('').map ((c) => c.charCodeAt (0))),
@@ -77,18 +118,32 @@ export default function OrderForm() {
         {value: value.toString() }
       );
     await transaction.wait();
+    setStatus({error: false, msg: 'Your order has been succesfully created'});
+    resetState();
+    
+    } catch (error) {
+      setStatus({error: true, msg: error.message})
+    }
+    setLoading(false);
+    
   }
 
   return (
-    <Paper className={classes.formControl} variant='outlined'>
+    <Grid container xs={12} sm={8} md={5} lg={4} xl={3}>
+    <Paper className={classes.formControl} variant='outlined' elevation={3}>
     <Grid 
-      container  
-      spacing={2}
+      container
+      item
+      spacing={3}
       direction="column"
       justifyContent="space-around"
-      alignItems="flex-start"
+      alignItems="center"
     >
-      <h1>Create a new transportaion order</h1>
+      <Grid item className={classes.title}>
+        <Typography variant="h5" component="h2" noWrap>
+          Create a new transportation order
+        </Typography>
+      </Grid>
       <Grid item className={classes.inputWrapper}>
         <FormControl className={classes.input}>
           <InputLabel id="origin-port-select-label">Origin port</InputLabel>
@@ -121,21 +176,6 @@ export default function OrderForm() {
         </FormControl>
       </Grid>
       <Grid item className={classes.inputWrapper}>
-        <FormControl className={classes.input}>
-          <InputLabel id="cargo-type-select-label">Cargo type</InputLabel>
-          <Select
-            labelId="cargo-type-select-label"
-            id="cargo-type-select"
-            value={cargoType}
-            onChange={ e => setCargoType(e.target.value)}
-          >
-            <MenuItem value={0}>Bulk</MenuItem>
-            <MenuItem value={1}>Piece</MenuItem>
-            <MenuItem value={2}>Hazardous</MenuItem>
-          </Select>
-        </FormControl>
-      </Grid>
-      <Grid item className={classes.inputWrapper}>
         <MuiPickersUtilsProvider utils={DateFnsUtils}>
           <Grid container>
             <KeyboardDatePicker
@@ -157,42 +197,86 @@ export default function OrderForm() {
         </MuiPickersUtilsProvider>
       </Grid>
       <Grid item className={classes.inputWrapper}>
+        <FormControl className={classes.input}>
+          <InputLabel id="cargo-type-select-label">Cargo type</InputLabel>
+          <Select
+            labelId="cargo-type-select-label"
+            id="cargo-type-select"
+            value={cargoType}
+            onChange={ e => setCargoType(e.target.value)}
+          >
+            <MenuItem value={0}>Bulk</MenuItem>
+            <MenuItem value={1}>Piece</MenuItem>
+            <MenuItem value={2}>Hazardous</MenuItem>
+          </Select>
+        </FormControl>
+      </Grid>
+      <Grid item className={classes.inputWrapper}>
         <TextField
             className={classes.input}
             id="outlined-number"
-            label="Order payout"
+            label={`Cargo load ${ cargoType !== -1 ? `(${cargoType === 1 ? 'TEU' : 'Tonnes' })` : ''} `}
             type="number"
-            InputLabelProps={{
+            value={cargoLoad}
+            onChange={ e => setCargoLoad(e.target.value) }
+            disabled={cargoType === -1}
+            error={cargoLoad <= 0}
+            helperText={cargoLoad <= 0 ? 'Cargo load must be bigger than 0' : ' '}
+          />
+      </Grid>
+      <Grid item className={classes.inputWrapper}>
+        <TextField
+            className={classes.input}
+            id="outlined-number"
+            label="Order payout (Ether Ξ)"
+            type="number"
+            InputProps={{
               shrink: true,
               startAdornment: (
                 <InputAdornment position="start">
-                  <AccountCircle />
+                  <LocalAtmIcon />
                 </InputAdornment>
               ),
             }}
             value={payout}
             onChange={ e => setPayout(e.target.value) }
+            error={payout <= 0}
+            helperText={payout <= 0 ? 'Payout must be bigger than 0' : ' '}
           />
       </Grid>
+      <Grid item className={classes.inputWrapper}>
+        <Alert severity="info">{`The estimated gas price for this transaction is ${Math.round(gasPrice*10000)/10000} Ξ`}</Alert>
+      </Grid>
+      { status &&
+        <Grid item className={classes.inputWrapper}>
+          <Alert severity={status && status.error ? "error" : "success"} variant="outlined">
+            {status.msg}
+          </Alert>
+        </Grid>
+      }
       <Grid  
         item
         container
-        direction='row'
-        justifyContent="flex-end"
-        alignItems="center"
-        className={classes.test}
+        direction='row-reverse'
+        className={classes.inputWrapper}
       >
-        <Grid item>
-          <Button 
-            variant="contained" 
-            color="primary"
-            onClick={submitOrder}
-          >
-            Create order
-          </Button>
+        <Grid item>        
+          <label htmlFor="create-button">
+            <Button 
+              variant="contained" 
+              color="primary"
+              onClick={submitOrder}
+              disabled={!(originPort !== '' && destinationPort !== '' && payout > 0 && cargoType !== '' && cargoLoad > 0)}
+            >
+              Create order
+            </Button>
+            {loading && <CircularProgress size={24} className={classes.buttonProgress} />}
+          </label>
         </Grid>
       </Grid>
+      
     </Grid>
     </Paper>
+    </Grid>
   );
 }
