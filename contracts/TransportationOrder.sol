@@ -38,6 +38,7 @@ contract TransportationOrder {
     uint256 public deadline;
     uint256 public orderPayout;
     Goods public cargoType;
+    uint256 public cargoLoad;
     bytes32 public cargoDetails;
     bytes32 public originGauge;
     bytes32 public destinationGauge;
@@ -58,7 +59,7 @@ contract TransportationOrder {
     event OrderCreated(address _did);
     event OrderCanceled(address _did);
     
-    constructor(bytes5 _originPort, bytes5 _destinationPort, uint256 _deadline, uint256 _orderPayout, Goods _cargoType) payable {
+    constructor(bytes5 _originPort, bytes5 _destinationPort, uint256 _deadline, uint256 _orderPayout, Goods _cargoType, uint256 _cargoLoad) payable {
         // constructor should only be called by the factory.
         client = payable(tx.origin);
         originPort = _originPort;
@@ -66,6 +67,7 @@ contract TransportationOrder {
         orderPayout = _orderPayout;
         deadline = _deadline;
         cargoType = _cargoType;
+        cargoLoad = _cargoLoad;
         orderState = State.INITIAL;
         
         emit ValidateClientDID(client);

@@ -3,22 +3,24 @@ import TransportationOrderFactory from '../artifacts/contracts/TransportationOrd
 import TransportationOrder from '../artifacts/contracts/TransportationOrder.sol/TransportationOrder.json';
 import { ethers } from 'ethers';
 import { useState, useEffect } from 'react';
-import { Container, Grid } from '@material-ui/core';
-import AvailableOrder from './AvailableOrder';
+import { Grid } from '@material-ui/core';
+import OrderCard from './OrderCard';
+import FiltersSection from './FiltersSection';
 import { orderState, filterByState } from '../helper';
-
 
 const FACT_ADDR = '0x5fbdb2315678afecb367f032d93f642f64180aa3';
 
+
 const useStyles = makeStyles((theme) => ({
-
+  filtersContainer: {
+    borderRight: "1px solid black"
+  },
 }));
-
 
 
 export default function OrderForm() {
 
-  const classes = useStyles();
+   const classes = useStyles();
 
   const [ordersData, setOrdersData] = useState([])
 
@@ -39,6 +41,7 @@ export default function OrderForm() {
         const cargoType = await orderContract.cargoType();
         const deadline = await orderContract.deadline();
         const orderState = await orderContract.orderState();
+        const cargoLoad = await orderContract.cargoLoad();
         newOrdersData.push({
           address: transportationOrders[i], 
           originPort,
@@ -47,7 +50,8 @@ export default function OrderForm() {
           orderPayout,
           cargoType,
           deadline,
-          orderState
+          orderState,
+          cargoLoad
         });
       }
       setOrdersData(filterByState(newOrdersData, orderState.INITIAL));
@@ -55,12 +59,15 @@ export default function OrderForm() {
   }
 
   return (
-    <Container>
-      <Grid container spacing={8}>
+    <Grid container spacing={0}>
+      <Grid item xs={2} className={classes.filtersContainer}>
+        <FiltersSection />
+      </Grid>
+      <Grid item xs={10}>
         {ordersData.map((orderData, index) => 
-          <AvailableOrder key={index} orderData={orderData}/>
+          <OrderCard key={index} orderData={orderData} onlyInitial={true}/>
         )}
-      </Grid> 
-    </Container>
+      </Grid>
+    </Grid> 
   );
 }

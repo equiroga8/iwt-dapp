@@ -6,9 +6,8 @@ import Tab from '@material-ui/core/Tab';
 import AddBoxRoundedIcon from '@material-ui/icons/AddBoxRounded';
 import FormatListBulletedRoundedIcon from '@material-ui/icons/FormatListBulletedRounded';
 import DescriptionRoundedIcon from '@material-ui/icons/DescriptionRounded';
-import {
-    Link
-  } from "react-router-dom";
+import MenuOpenOutlinedIcon from '@material-ui/icons/MenuOpenOutlined';
+import { Link } from "react-router-dom";
 
 const useStyles = makeStyles({
   root: {
@@ -27,7 +26,7 @@ export default function CenteredTabs() {
   const classes = useStyles();
   const [value, setValue] = useState(0);
 
-  const allTabs = ['/create', '/orders', '/myorders'];
+  const allTabs = ['/create', '/orders', '/ongoingorders', '/myorders'];
 
   const handleChange = (event, newValue) => {
     setValue(newValue);
@@ -56,7 +55,7 @@ export default function CenteredTabs() {
               wrapper: classes.iconLabelWrapper,
               labelContainer: classes.labelContainer
             }} 
-            label="View available orders" 
+            label="Available orders" 
             icon={<FormatListBulletedRoundedIcon style={{ display: "inline-block", marginBottom:"-1px", marginRight: "6px" }}/>}
             component={Link} to={allTabs[1]}
         />
@@ -65,10 +64,18 @@ export default function CenteredTabs() {
               wrapper: classes.iconLabelWrapper,
               labelContainer: classes.labelContainer
             }} 
+            label="Ongoing orders" 
+            icon={<MenuOpenOutlinedIcon style={{ display: "inline-block", marginBottom:"-1px", marginRight: "6px" }}/>}
+            component={Link} to={allTabs[2]}
+        />
+        <Tab 
+            classes={{
+              wrapper: classes.iconLabelWrapper,
+              labelContainer: classes.labelContainer
+            }} 
             label="My orders" 
             icon={<DescriptionRoundedIcon style={{ display: "inline-block", marginBottom:"-1px", marginRight: "6px" }}/>}
-            component={Link} to={allTabs[2]}
-            disabled
+            component={Link} to={allTabs[3]}
         />
       </Tabs>
     </Paper>

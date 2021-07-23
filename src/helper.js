@@ -2,6 +2,7 @@ import { ethers } from 'ethers';
 
 export const WEI_VAL = 1000000000000000000; 
 export const VALIDATOR_ADDR = 0x1234;
+export const DEC_PLACES_REGEX = /^\d+(\.\d{0,2})?$/;
 
 export const codeToPort = new Map([
     ["DEBON", "Bonn"], 
@@ -21,6 +22,12 @@ export const cargoTypes = new Map([
   [2, "Hazardous"],
 ]);
 
+export const roleCredentials = new Map([
+  ["Operator", ["Boating licence", "Barge inspection", "Hazardous transport permit"]], 
+  ["Origin port inspector", ["Barge inspector license"]],
+  ["Destination port inspector", ["Barge inspector license"]],
+]);
+
 export const orderState = {
     INITIAL: 0, 
     ASSIGNED: 1,
@@ -31,6 +38,17 @@ export const orderState = {
     COMPLETED: 6, 
     CANCELED: 7
 };
+
+export const orderStateMap = new Map([
+  [0, 'INITIAL'], 
+  [1, 'ASSIGNED'], 
+  [2, 'INSPECTED'], 
+  [3, 'ORIGIN_GAUGING'], 
+  [4, 'IN_TRANSIT'],
+  [5, 'DESTINATION_GAUGING'],
+  [6, 'COMPLETED'],
+  [7, 'CANCELED']
+])
 
 export const hexToInt  = (value) => {
     return parseInt(Number(value), 10);

@@ -13,6 +13,7 @@ import IconButton from '@material-ui/core/IconButton';
 import DirectionsBoatTwoToneIcon from '@material-ui/icons/DirectionsBoatTwoTone';
 import TabPanel from './components/TabPanel';
 import AvailableOrdersList from './components/AvailableOrdersList';
+import IconTitle from './components/IconTitle';
 import { Grid } from '@material-ui/core';
 
 const useStyles = makeStyles((theme) => ({
@@ -65,7 +66,7 @@ export default function App() {
               <AvailableOrdersList />
             </Route>
             <Route path="/myorders">
-              <MyOrders />
+              <IconTitle />
             </Route>
           </Switch>
         </Grid>  
@@ -74,6 +75,3 @@ export default function App() {
   );
 }
 
-function MyOrders() {
-  return <h2>My Orders</h2>;
-}

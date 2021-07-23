@@ -18,7 +18,7 @@ import LocalAtmIcon from '@material-ui/icons/LocalAtm';
 import Button from '@material-ui/core/Button';
 import TransportationOrderFactory from '../artifacts/contracts/TransportationOrderFactory.sol/TransportationOrderFactory.json';
 import { ethers } from 'ethers';
-import { WEI_VAL, codeToPort } from '../helper';
+import { WEI_VAL, codeToPort, DEC_PLACES_REGEX } from '../helper';
 import { Typography, CircularProgress } from '@material-ui/core';
 import Alert from '@material-ui/lab/Alert';
 
@@ -31,6 +31,13 @@ const useStyles = makeStyles((theme) => ({
     paddingTop: 10,
     paddingBottom: 16,
     width: '100%'
+  },
+  formControlLoading: {
+    margin: theme.spacing(1),
+    paddingTop: 10,
+    paddingBottom: 16,
+    width: '100%', 
+    opacity: 0.5
   },
   inputWrapper: {
     width: '90%',
@@ -83,6 +90,7 @@ export default function OrderForm() {
         ethers.utils.hexlify([1, 2, 3, 4, 5]),
         deadline.getTime(),
         0,
+        20,
         {value: '0' }
       );
       setContract(contract);
@@ -99,10 +107,10 @@ export default function OrderForm() {
   const resetState = () => {
     setOriginPort('');
     setDestinationPort('');
-    setPayout('');
+    setPayout(undefined);
     setDeadline(new Date((new Date()).getTime() + (10 * 86400000)));
     setCargoType(-1);
-    setCargoLoad('');
+    setCargoLoad();
   };
   
   const submitOrder = async () => {
@@ -114,7 +122,8 @@ export default function OrderForm() {
         ethers.utils.hexlify(originPort.split('').map ((c) => c.charCodeAt (0))),
         ethers.utils.hexlify(destinationPort.split('').map ((c) => c.charCodeAt (0))),
         deadline.getTime(),
-        cargoType, 
+        cargoType,
+        Math.round(cargoLoad * 100),
         {value: value.toString() }
       );
     await transaction.wait();
@@ -130,7 +139,7 @@ export default function OrderForm() {
 
   return (
     <Grid container xs={12} sm={8} md={5} lg={4} xl={3}>
-    <Paper className={classes.formControl} variant='outlined' elevation={3}>
+    <Paper className={loading ? classes.formControlLoading : classes.formControl} variant='outlined' elevation={3}>
     <Grid 
       container
       item
@@ -153,6 +162,7 @@ export default function OrderForm() {
             id="origin-port-select"
             value={originPort}
             onChange={ e => setOriginPort(e.target.value)}
+            disabled={loading}
           >
             {[...codeToPort.keys()].map((portCode, index) => 
               <MenuItem key={index} value={portCode}>{codeToPort.get(portCode)}</MenuItem>
@@ -168,6 +178,7 @@ export default function OrderForm() {
             id="destination-port-select"
             value={destinationPort}
             onChange={ e => setDestinationPort(e.target.value)}
+            disabled={loading}
           >
             {[...codeToPort.keys()].map((portCode, index) => 
               <MenuItem key={index} value={portCode}>{codeToPort.get(portCode)}</MenuItem>
@@ -192,6 +203,7 @@ export default function OrderForm() {
               KeyboardButtonProps={{
                 'aria-label': 'change date',
               }}
+              disabled={loading}
             />
           </Grid>
         </MuiPickersUtilsProvider>
@@ -204,6 +216,7 @@ export default function OrderForm() {
             id="cargo-type-select"
             value={cargoType}
             onChange={ e => setCargoType(e.target.value)}
+            disabled={loading}
           >
             <MenuItem value={0}>Bulk</MenuItem>
             <MenuItem value={1}>Piece</MenuItem>
@@ -218,8 +231,10 @@ export default function OrderForm() {
             label={`Cargo load ${ cargoType !== -1 ? `(${cargoType === 1 ? 'TEU' : 'Tonnes' })` : ''} `}
             type="number"
             value={cargoLoad}
-            onChange={ e => setCargoLoad(e.target.value) }
-            disabled={cargoType === -1}
+            onChange={ e => {
+              if(DEC_PLACES_REGEX.test(e.target.value)) setCargoLoad(e.target.value)
+            }}
+            disabled={cargoType === -1 || loading}
             error={cargoLoad <= 0}
             helperText={cargoLoad <= 0 ? 'Cargo load must be bigger than 0' : ' '}
           />
@@ -242,6 +257,7 @@ export default function OrderForm() {
             onChange={ e => setPayout(e.target.value) }
             error={payout <= 0}
             helperText={payout <= 0 ? 'Payout must be bigger than 0' : ' '}
+            disabled={loading}
           />
       </Grid>
       <Grid item className={classes.inputWrapper}>
@@ -266,7 +282,7 @@ export default function OrderForm() {
               variant="contained" 
               color="primary"
               onClick={submitOrder}
-              disabled={!(originPort !== '' && destinationPort !== '' && payout > 0 && cargoType !== '' && cargoLoad > 0)}
+              disabled={loading || !(originPort !== '' && destinationPort !== '' && payout > 0 && cargoType !== '' && cargoLoad > 0)}
             >
               Create order
             </Button>

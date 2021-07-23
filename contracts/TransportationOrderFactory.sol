@@ -15,9 +15,9 @@ contract TransportationOrderFactory {
     address[] public transportOrders;
     
     
-    function createTransportOrder(bytes5 _originPort, bytes5 _destinationPort, uint256 _cutOffDate, TransportationOrder.Goods _cargoType) payable public returns (address transportationOrder) {
+    function createTransportOrder(bytes5 _originPort, bytes5 _destinationPort, uint256 _cutOffDate, TransportationOrder.Goods _cargoType, uint256 _cargoLoad) payable public returns (address transportationOrder) {
         
-        address newTransportOrder = address((new TransportationOrder){value: msg.value}(_originPort, _destinationPort, _cutOffDate, msg.value,  _cargoType));
+        address newTransportOrder = address((new TransportationOrder){value: msg.value}(_originPort, _destinationPort, _cutOffDate, msg.value, _cargoType, _cargoLoad));
         transportOrders.push(newTransportOrder);
         return newTransportOrder;
     }
