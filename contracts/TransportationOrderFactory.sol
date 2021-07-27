@@ -14,12 +14,13 @@ contract TransportationOrderFactory {
     
     address[] public transportOrders;
     
-    
-    function createTransportOrder(bytes5 _originPort, bytes5 _destinationPort, uint256 _cutOffDate, TransportationOrder.Goods _cargoType, uint256 _cargoLoad) payable public returns (address transportationOrder) {
+    event OrderCreated(address _contractAddr);
+
+    function createTransportOrder(bytes5 _originPort, bytes5 _destinationPort, uint256 _cutOffDate, TransportationOrder.Goods _cargoType, uint256 _cargoLoad) payable public {
         
         address newTransportOrder = address((new TransportationOrder){value: msg.value}(_originPort, _destinationPort, _cutOffDate, msg.value, _cargoType, _cargoLoad));
         transportOrders.push(newTransportOrder);
-        return newTransportOrder;
+        emit OrderCreated(newTransportOrder);
     }
     
     function getTransportOrders() public view returns(address[] memory _transportOrders) {

@@ -4,6 +4,11 @@ export const WEI_VAL = 1000000000000000000;
 export const VALIDATOR_ADDR = 0x1234;
 export const DEC_PLACES_REGEX = /^\d+(\.\d{0,2})?$/;
 
+export const LOCAL_DDB_SETTINGS = {
+  region: 'localhost',
+  endpoint: 'http://localhost:8000',
+}
+
 export const codeToPort = new Map([
     ["DEBON", "Bonn"], 
     ["DEDTM", "Dortmund"],

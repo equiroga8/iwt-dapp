@@ -21,6 +21,7 @@ import { ethers } from 'ethers';
 import { WEI_VAL, codeToPort, DEC_PLACES_REGEX } from '../helper';
 import { Typography, CircularProgress } from '@material-ui/core';
 import Alert from '@material-ui/lab/Alert';
+import { createTable } from '../awsMethods';
 
 
 const FACT_ADDR = '0x5fbdb2315678afecb367f032d93f642f64180aa3';
@@ -67,14 +68,16 @@ export default function OrderForm() {
   const [destinationPort, setDestinationPort] = useState('');
   const [payout, setPayout] = useState(undefined);
   const [deadline, setDeadline] = useState(new Date((new Date()).getTime() + (10 * 86400000)));
-  const [cargoType, setCargoType] = useState(-1);
+  const [cargoType, setCargoType] = useState('');
   const [cargoLoad, setCargoLoad] = useState();
 
   const [contract, setContract] = useState();
   const [gasPrice, setGasPrice] = useState();
+  const [lastOrderAddr, setLastOrderAddr] = useState();
 
   const [status, setStatus] = useState();
   const [loading, setLoading] = useState(false);
+  
 
   const classes = useStyles();
 
@@ -109,7 +112,7 @@ export default function OrderForm() {
     setDestinationPort('');
     setPayout(undefined);
     setDeadline(new Date((new Date()).getTime() + (10 * 86400000)));
-    setCargoType(-1);
+    setCargoType('');
     setCargoLoad();
   };
   
@@ -117,6 +120,7 @@ export default function OrderForm() {
     let value = payout * WEI_VAL;
     setLoading(true);
     try {
+      
       const transaction = await contract
       .createTransportOrder(
         ethers.utils.hexlify(originPort.split('').map ((c) => c.charCodeAt (0))),
@@ -126,7 +130,12 @@ export default function OrderForm() {
         Math.round(cargoLoad * 100),
         {value: value.toString() }
       );
-    await transaction.wait();
+      await transaction.wait();
+      await contract.once('OrderCreated', async (orderAddr) => {
+        await createTable(orderAddr);
+      });
+    
+
     setStatus({error: false, msg: 'Your order has been succesfully created'});
     resetState();
     
@@ -134,7 +143,6 @@ export default function OrderForm() {
       setStatus({error: true, msg: error.message})
     }
     setLoading(false);
-    
   }
 
   return (
@@ -228,13 +236,13 @@ export default function OrderForm() {
         <TextField
             className={classes.input}
             id="outlined-number"
-            label={`Cargo load ${ cargoType !== -1 ? `(${cargoType === 1 ? 'TEU' : 'Tonnes' })` : ''} `}
+            label={`Cargo load ${ cargoType !== '' ? `(${cargoType === 1 ? 'TEU' : 'Tonnes' })` : ''} `}
             type="number"
             value={cargoLoad}
             onChange={ e => {
               if(DEC_PLACES_REGEX.test(e.target.value)) setCargoLoad(e.target.value)
             }}
-            disabled={cargoType === -1 || loading}
+            disabled={cargoType === '' || loading}
             error={cargoLoad <= 0}
             helperText={cargoLoad <= 0 ? 'Cargo load must be bigger than 0' : ' '}
           />
