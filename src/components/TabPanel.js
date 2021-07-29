@@ -7,6 +7,7 @@ import AddBoxRoundedIcon from '@material-ui/icons/AddBoxRounded';
 import FormatListBulletedRoundedIcon from '@material-ui/icons/FormatListBulletedRounded';
 import DescriptionRoundedIcon from '@material-ui/icons/DescriptionRounded';
 import MenuOpenOutlinedIcon from '@material-ui/icons/MenuOpenOutlined';
+import CreateIcon from '@material-ui/icons/Create';
 import { Link } from "react-router-dom";
 
 const useStyles = makeStyles({
@@ -26,7 +27,7 @@ export default function CenteredTabs() {
   const classes = useStyles();
   const [value, setValue] = useState(0);
 
-  const allTabs = ['/create', '/orders', '/ongoingorders', '/myorders'];
+  const allTabs = ['/create', '/orders', '/ongoing-orders', '/my-orders', '/sign-data'];
 
   const handleChange = (event, newValue) => {
     setValue(newValue);
@@ -76,6 +77,15 @@ export default function CenteredTabs() {
             label="My orders" 
             icon={<DescriptionRoundedIcon style={{ display: "inline-block", marginBottom:"-1px", marginRight: "6px" }}/>}
             component={Link} to={allTabs[3]}
+        />
+        <Tab 
+            classes={{
+              wrapper: classes.iconLabelWrapper,
+              labelContainer: classes.labelContainer
+            }} 
+            label="Sign message" 
+            icon={<CreateIcon style={{ display: "inline-block", marginBottom:"-1px", marginRight: "6px" }}/>}
+            component={Link} to={allTabs[4]}
         />
       </Tabs>
     </Paper>

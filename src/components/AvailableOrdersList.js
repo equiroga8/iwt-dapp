@@ -6,10 +6,7 @@ import { useState, useEffect } from 'react';
 import { Grid } from '@material-ui/core';
 import OrderCard from './OrderCard';
 import FiltersSection from './FiltersSection';
-import { orderState, filterByState } from '../helper';
-
-const FACT_ADDR = '0x5fbdb2315678afecb367f032d93f642f64180aa3';
-
+import { orderState, filterByState, FACT_ADDR } from '../helper';
 
 const useStyles = makeStyles((theme) => ({
   filtersContainer: {
@@ -28,33 +25,38 @@ export default function OrderForm() {
 
   async function getTransportationOrders() {
     if (typeof window.ethereum !== 'undefined') {
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const contract = new ethers.Contract(FACT_ADDR, TransportationOrderFactory.abi, provider);
-      let transportationOrders = await contract.getTransportOrders();
-      let newOrdersData = [];
-      for (let i = transportationOrders.length - 1; i >= 0; i--) {
-        const orderContract = new ethers.Contract(transportationOrders[i], TransportationOrder.abi, provider);
-        const destinationPort = await orderContract.destinationPort();
-        const originPort = await orderContract.originPort();
-        const client = await orderContract.client();
-        const orderPayout = await orderContract.orderPayout();
-        const cargoType = await orderContract.cargoType();
-        const deadline = await orderContract.deadline();
-        const orderState = await orderContract.orderState();
-        const cargoLoad = await orderContract.cargoLoad();
-        newOrdersData.push({
-          address: transportationOrders[i], 
-          originPort,
-          destinationPort,
-          client,
-          orderPayout,
-          cargoType,
-          deadline,
-          orderState,
-          cargoLoad
-        });
+      try {
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const contract = new ethers.Contract(FACT_ADDR, TransportationOrderFactory.abi, provider);
+        let transportationOrders = await contract.getTransportOrders();
+        let newOrdersData = [];
+        for (let i = transportationOrders.length - 1; i >= 0; i--) {
+          const orderContract = new ethers.Contract(transportationOrders[i], TransportationOrder.abi, provider);
+          const destinationPort = await orderContract.destinationPort();
+          const originPort = await orderContract.originPort();
+          const client = await orderContract.client();
+          const orderPayout = await orderContract.orderPayout();
+          const cargoType = await orderContract.cargoType();
+          const deadline = await orderContract.deadline();
+          const orderState = await orderContract.orderState();
+          const cargoLoad = await orderContract.cargoLoad();
+          newOrdersData.push({
+            address: transportationOrders[i], 
+            originPort,
+            destinationPort,
+            client,
+            orderPayout,
+            cargoType,
+            deadline,
+            orderState,
+            cargoLoad
+          });
+        }
+        setOrdersData(filterByState(newOrdersData, orderState.INITIAL));
+      } catch (err) {
+        console.log(err);
       }
-      setOrdersData(filterByState(newOrdersData, orderState.INITIAL));
+      
     }
   }
 

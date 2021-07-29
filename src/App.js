@@ -14,6 +14,7 @@ import DirectionsBoatTwoToneIcon from '@material-ui/icons/DirectionsBoatTwoTone'
 import TabPanel from './components/TabPanel';
 import AvailableOrdersList from './components/AvailableOrdersList';
 import IconTitle from './components/IconTitle';
+import SignData from './components/SignData';
 import { Grid } from '@material-ui/core';
 
 const useStyles = makeStyles((theme) => ({
@@ -65,8 +66,14 @@ export default function App() {
             <Route path="/orders">
               <AvailableOrdersList />
             </Route>
-            <Route path="/myorders">
+            <Route path="/ongoing-orders">
               <IconTitle />
+            </Route>
+            <Route path="/my-orders">
+              <IconTitle />
+            </Route>
+            <Route path="/sign-data">
+              <SignData />
             </Route>
           </Switch>
         </Grid>  

@@ -1,30 +1,16 @@
 import { useState, useEffect } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
-import InputLabel from '@material-ui/core/InputLabel';
-import MenuItem from '@material-ui/core/MenuItem';
-import FormControl from '@material-ui/core/FormControl';
-import Select from '@material-ui/core/Select';
-import Paper from '@material-ui/core/Paper';
-import Grid from '@material-ui/core/Grid';
+import { InputLabel, MenuItem, FormControl, Select, Paper, Grid, TextField, InputAdornment, Button, Typography, CircularProgress } from '@material-ui/core';
 import 'date-fns';
 import DateFnsUtils from '@date-io/date-fns';
-import {
-  MuiPickersUtilsProvider,
-  KeyboardDatePicker,
-} from '@material-ui/pickers';
-import TextField from '@material-ui/core/TextField';
-import InputAdornment from '@material-ui/core/InputAdornment';
+import { MuiPickersUtilsProvider, KeyboardDatePicker } from '@material-ui/pickers';
 import LocalAtmIcon from '@material-ui/icons/LocalAtm';
-import Button from '@material-ui/core/Button';
 import TransportationOrderFactory from '../artifacts/contracts/TransportationOrderFactory.sol/TransportationOrderFactory.json';
+import TransportationOrderLogger from '../artifacts/contracts/TransportationOrderLogger.sol/TransportationOrderLogger.json';
 import { ethers } from 'ethers';
-import { WEI_VAL, codeToPort, DEC_PLACES_REGEX } from '../helper';
-import { Typography, CircularProgress } from '@material-ui/core';
+import { WEI_VAL, codeToPort, DEC_PLACES_REGEX, LOGGER_ADDR, FACT_ADDR } from '../helper';
 import Alert from '@material-ui/lab/Alert';
-import { createTable } from '../awsMethods';
-
-
-const FACT_ADDR = '0x5fbdb2315678afecb367f032d93f642f64180aa3';
+import { createTable } from '../ddbMethods';
 
 const useStyles = makeStyles((theme) => ({
   formControl: {
@@ -71,9 +57,9 @@ export default function OrderForm() {
   const [cargoType, setCargoType] = useState('');
   const [cargoLoad, setCargoLoad] = useState();
 
-  const [contract, setContract] = useState();
+  const [factoryContract, setFactoryContract] = useState();
   const [gasPrice, setGasPrice] = useState();
-  const [lastOrderAddr, setLastOrderAddr] = useState();
+  const [loggerContract, setLoggerContract] = useState();
 
   const [status, setStatus] = useState();
   const [loading, setLoading] = useState(false);
@@ -87,8 +73,8 @@ export default function OrderForm() {
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const currentGasPrice = await provider.getGasPrice();
       const signer = provider.getSigner();
-      const contract = new ethers.Contract(FACT_ADDR, TransportationOrderFactory.abi, signer);
-      let estimatedGasPrice = await contract.estimateGas.createTransportOrder(
+      const factContract = new ethers.Contract(FACT_ADDR, TransportationOrderFactory.abi, signer);
+      let estimatedGasPrice = await factContract.estimateGas.createTransportOrder(
         ethers.utils.hexlify([1, 2, 3, 4, 5]),
         ethers.utils.hexlify([1, 2, 3, 4, 5]),
         deadline.getTime(),
@@ -96,8 +82,9 @@ export default function OrderForm() {
         20,
         {value: '0' }
       );
-      setContract(contract);
+      setFactoryContract(factContract);
       setGasPrice(estimatedGasPrice * currentGasPrice / WEI_VAL);
+      setLoggerContract(new ethers.Contract(LOGGER_ADDR, TransportationOrderLogger.abi, signer))
     }
     requestAccount();
     
@@ -121,7 +108,7 @@ export default function OrderForm() {
     setLoading(true);
     try {
       
-      const transaction = await contract
+      const transaction = await factoryContract
       .createTransportOrder(
         ethers.utils.hexlify(originPort.split('').map ((c) => c.charCodeAt (0))),
         ethers.utils.hexlify(destinationPort.split('').map ((c) => c.charCodeAt (0))),
@@ -131,7 +118,7 @@ export default function OrderForm() {
         {value: value.toString() }
       );
       await transaction.wait();
-      await contract.once('OrderCreated', async (orderAddr) => {
+      await loggerContract.once('OrderCreationRequest', async (orderAddr) => {
         await createTable(orderAddr);
       });
     
@@ -146,7 +133,7 @@ export default function OrderForm() {
   }
 
   return (
-    <Grid container xs={12} sm={8} md={5} lg={4} xl={3}>
+    <Grid container item xs={12} sm={8} md={5} lg={4} xl={3}>
     <Paper className={loading ? classes.formControlLoading : classes.formControl} variant='outlined' elevation={3}>
     <Grid 
       container
@@ -254,7 +241,6 @@ export default function OrderForm() {
             label="Order payout (Ether Ξ)"
             type="number"
             InputProps={{
-              shrink: true,
               startAdornment: (
                 <InputAdornment position="start">
                   <LocalAtmIcon />

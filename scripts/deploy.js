@@ -20,6 +20,13 @@ async function main() {
   await transportationOrderFactory.deployed();
 
   console.log("Factory deployed to:", transportationOrderFactory.address);
+
+  const TransportationOrderLogger = await hre.ethers.getContractFactory("TransportationOrderLogger");
+  const transportationOrderLogger = await TransportationOrderLogger.deploy();
+
+  await transportationOrderLogger.deployed();
+
+  console.log("Logger deployed to:", transportationOrderLogger.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

@@ -2,7 +2,7 @@
 
 pragma solidity >=0.7.0 <0.9.0;
 
-
+import './TransportationOrderLogger.sol';
 
 /**
  * @title Decentralized IDentity Management (DIDM) system
@@ -43,24 +43,29 @@ contract TransportationOrder {
     bytes32 public originGauge;
     bytes32 public destinationGauge;
     
-    address private verifier = address(0x9F785A6d956998DEA3d43F204Ac028e007928a6A);
     address public client;
     PayableParticipant public shipper;
     Participant public gaugingSensor;
     Participant public cargoInspector;
     State public orderState;
     
+    address private verifier = address(0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266);
+    TransportationOrderLogger private logger = TransportationOrderLogger(0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512);
+    address private factory = address(0x5FbDB2315678afecb367f032d93F642f64180aa3);
+    
     modifier isVerifier(address _address) {
         require(_address == verifier, "Only a verifier can call this function");
         _;
     }
     
-    event ValidateClientDID(address _did);
-    event OrderCreated(address _did);
-    event OrderCanceled(address _did);
+     modifier isFactory(address _address) {
+        require(_address == factory, "Only the factory contract can call this function");
+        _;
+    }
     
-    constructor(bytes5 _originPort, bytes5 _destinationPort, uint256 _deadline, uint256 _orderPayout, Goods _cargoType, uint256 _cargoLoad) payable {
-        // constructor should only be called by the factory.
+    
+    constructor(bytes5 _originPort, bytes5 _destinationPort, uint256 _deadline, uint256 _orderPayout, Goods _cargoType, uint256 _cargoLoad) isFactory(msg.sender) payable {
+        
         client = payable(tx.origin);
         originPort = _originPort;
         destinationPort = _destinationPort;
@@ -70,18 +75,17 @@ contract TransportationOrder {
         cargoLoad = _cargoLoad;
         orderState = State.INITIAL;
         
-        emit ValidateClientDID(client);
+        logger.orderCreationRequestEvent(address(this));
         
     }
     
-    
     function verificationResult(bool successful) public isVerifier(msg.sender) {
         if (successful) {
-            emit OrderCreated(client); 
+            logger.orderCreatedEvent(address(this), client); 
         } else {
             payable(client).transfer(orderPayout);
             orderState = State.CANCELED;
-            emit OrderCanceled(client); 
+            logger.orderCanceledEvent(address(this), client); 
         }
     }
     
@@ -89,60 +93,51 @@ contract TransportationOrder {
      * @notice Order is assigned to the shipper that requests it.
      */
      
-    event OrderAssignmentRequest(address _did, bytes32 uuid);
-    event OrderAssigned(address _did);
     
     function requestShipperRole(bytes32 _uuid) public {
         require(shipper.did == address(0x0) && orderState == State.INITIAL);
-        emit OrderAssignmentRequest(msg.sender, _uuid);
+        logger.orderAssignmentRequestEvent(address(this), msg.sender, _uuid);
     }
     
     function assignShipperRole(bytes32 _uuid, address payable _did) public isVerifier(msg.sender) {
         shipper = PayableParticipant(_uuid, _did);
         orderState = State.ASSIGNED;
-        emit OrderAssigned(_did);
+        logger.orderAssignedEvent(address(this), _did);
     }
     
     /**
      * @notice Cargo Inspector
      */
     
-    event InspectorRoleRequested(address _did, bytes32 uuid);
-    event InspectorRoleAssigned(address _did);
-    
     function requestInspectorRole(bytes32 _uuid) public {
         require(cargoInspector.did == address(0x0) && orderState == State.ASSIGNED);
-        emit InspectorRoleRequested(msg.sender, _uuid);
+        logger.inspectorRoleRequestEvent(address(this), msg.sender, _uuid);
     }
     
     function assignInsectorRole(bytes32 _uuid, address _did) public isVerifier(msg.sender) {
         cargoInspector = Participant(_uuid, _did);
-        emit InspectorRoleAssigned(_did);
+        logger.inspectorRoleAssignedEvent(address(this), _did);
     }
     
     function registerInspectionReport(bytes32 _inspectionReport) public {
         require(cargoInspector.did == msg.sender && orderState == State.ASSIGNED);
         cargoDetails = _inspectionReport;
         orderState = State.INSPECTED;
-        
     }
     
     
     /**
      * @notice Origin Gauging
      */
-    
-    event GaugerRoleRequested(address _did, bytes32 uuid);
-    event GaugerRoleAssigned(address _did);
-    
+
     function requestGaugerRole(bytes32 _uuid) public {
         require(gaugingSensor.did == address(0x0) && (orderState == State.ASSIGNED || orderState == State.INSPECTED));
-        emit GaugerRoleRequested(msg.sender, _uuid);
+        logger.gaugerRoleRequestEvent(address(this), msg.sender, _uuid);
     }
     
     function assignGaugerRole(bytes32 _uuid, address _did) public isVerifier(msg.sender) {
         gaugingSensor = Participant(_uuid, _did);
-        emit GaugerRoleAssigned(_did);
+        logger.gaugerRoleAssignedEvent(address(this), msg.sender);
     }
     
     function registerOriginGaugeEmpty(bytes32 _originGaugeEmpty) public {

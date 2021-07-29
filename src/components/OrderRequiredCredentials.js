@@ -56,7 +56,7 @@ export default function OrderRequiredCredentials(props) {
       
         <Typography variant="subtitle1" component="h6" color="textSecondary">
           <ul>
-            {roleCredentials.get(props.role).map((credential) => <li>{credential}</li>)}
+            {roleCredentials.get(props.role).map((credential, index) => <li key={index}>{credential}</li>)}
           </ul>
         </Typography>
       </Grid>
