@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
 import {Grid, Card, CardActions, CardContent, Button, Typography, Container, Divider } from '@material-ui/core';
 import OrderDetails from './OrderDetails';
@@ -8,7 +8,9 @@ import ArrowForwardIcon from '@material-ui/icons/ArrowForward';
 import AccountCircleOutlinedIcon from '@material-ui/icons/AccountCircleOutlined';
 import IconTitle from './IconTitle';
 import OrderRequiredCredentials from './OrderRequiredCredentials';
-import { hexToInt, hexToPortName, WEI_VAL, readAllFiles } from '../helper';
+import { hexToInt, hexToPortName, WEI_VAL, readAllFiles, VERIFIER_PUB_Key, hashObjects } from '../helper';
+import { uploadCredentialsToDDB } from '../ddbMethods';
+import EthCrypto from 'eth-crypto';
 
 const useStyles = makeStyles({
   root: {
@@ -37,6 +39,23 @@ export default function OrderCard(props) {
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [role, setRole] = useState('Operator');
 
+ useEffect(()=>{
+    const uploadCredentials = async () => {
+      console.log(credentials);
+      const encrypted = await EthCrypto.encryptWithPublicKey(
+        VERIFIER_PUB_Key, 
+        JSON.stringify(credentials)
+      );
+
+      const encryptedString = EthCrypto.cipher.stringify(encrypted);
+      console.log(encryptedString);
+      uploadCredentialsToDDB('Credentials', hashObjects(credentials), encryptedString);
+
+    }
+    if (credentials.length !== 0) {
+      uploadCredentials();
+    }
+ }, [credentials]);
 
   const handleChange = (e) => {
     setLoadingFiles(true);

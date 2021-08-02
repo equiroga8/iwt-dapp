@@ -4,7 +4,6 @@ import { Grid, Typography, TextField, Button } from "@material-ui/core";
 import { ethers } from 'ethers';
 import Alert from '@material-ui/lab/Alert';
 import BorderColorIcon from '@material-ui/icons/BorderColor';
-import EthCrypto from 'eth-crypto';
 
 const useStyles = makeStyles({
   itemContainer: {
@@ -46,7 +45,7 @@ export default function SignData(props) {
     console.log("SIGNATURE VALID:  ", matches)
     console.log()
     */
-   
+
     setSignature(newSignature);
 
   }

@@ -1,4 +1,4 @@
-import { LOCAL_DDB_SETTINGS } from './helper';
+const { LOCAL_DDB_SETTINGS } = require('./helper');
 const AWS = require('aws-sdk');
 
 AWS.config.update({
@@ -37,13 +37,13 @@ export const createTable = async (tableName) => {
     }
 }
 
-export const writeToTable = async (tableName, hash, data) => {
+export const uploadCredentialsToDDB = async (tableName, hash, data) => {
     const documentClient = new AWS.DynamoDB.DocumentClient(LOCAL_DDB_SETTINGS);
     
     const params = {
         TableName: tableName,
         Item: {
-            id: hash,
+            credentialsHash: hash,
             data: data
         }
     };

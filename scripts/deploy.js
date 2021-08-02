@@ -3,7 +3,119 @@
 //
 // When running the script with `hardhat run <script>` you'll find the Hardhat
 // Runtime Environment's members available in the global scope.
+const { hash } = require("eth-crypto");
 const hre = require("hardhat");
+const fs = require('fs')
+
+const ethers = hre.ethers;
+
+// 5 templates
+const credentialTemplates = [{
+  credentialType: "BargeLicence",
+  schema: '{' +
+  '"name":"String",' +
+  '"surname":"String",' +
+  '"country":"String",' +
+  '"type":"String"}',
+  signerNumber: 18
+},{
+  credentialType: "HazardousTransport",
+  schema: '{' +
+  '"name":"String",' +
+  '"surname":"String",' +
+  '"country":"String",' +
+  '"grade":"String"}',
+  signerNumber: 16
+},{
+  credentialType: "BargeRegistration",
+  schema: '{' +
+  '"bargeDID":"String",' +
+  '"manufacturer":"String",' +
+  '"model":"String",' +
+  '"length":"String",' +
+  '"width":"String",' +
+  '"maxCapacity":"String"}',
+  signerNumber: 15
+},{
+  credentialType: "CargoInspectorLicence",
+  schema: '{' +
+  '"name":"String",' +
+  '"surname":"String",' +
+  '"examination":"String"}',
+  signerNumber: 17
+},{
+  credentialType: "GaugeCalibration",
+  schema: '{' +
+  '"manufacturer":"String",' +
+  '"model":"String",' +
+  '"calibrationTestPassed":"Boolean"}',
+  signerNumber: 14
+}];
+
+const digitalCredentials = [
+  {
+    path: './credentials/operator/SW-Barge-Licence.txt',
+    issuerNumber: 18,
+    recoveryAddress: '0xaFA713C081039158B79e99a693f387A6e28E9eF6'
+  },
+  {
+    path: './credentials/operator/SW-Hazardous-Transport.txt',
+    issuerNumber: 16,
+    recoveryAddress: '0xaaB5f65E40E37B7086D5e96BDD7b843b25280748'
+  },
+  {
+    path: './credentials/operator/Barge-Registration.txt',
+    issuerNumber: 15,
+    recoveryAddress: '0xaC08351626350A22eD90d28A85a46018763f60F9'
+  },
+  {
+    path: 'credentials/inspector/AM-Cargo-Inspector-Licence.txt',
+    issuerNumber: 17,
+    recoveryAddress: '0xa76958A587001b645c49e19BAa0D79DDE32cC991'
+  },
+  {
+    path: 'credentials/inspector/MM-Cargo-Inspector-Licence.txt',
+    issuerNumber: 17,
+    recoveryAddress: '0xa74B61C60546273C0a3Fca5dc36263b860AE3C36'
+  },
+  {
+    path: './credentials/gauger/Gauge-Calibration.txt',
+    issuerNumber: 14,
+    recoveryAddress: '0xaa60C2b63aAE7D97C08d4C5a92bd039DC11dA564'
+  }
+];
+
+const createDIDs = async (signers, provider, didmSystem) => {
+  for (let num of signers) {
+    let signer = provider.getSigner(num);
+    let didmSystemAsSigner = didmSystem.connect(signer);
+    await didmSystemAsSigner.createDID();
+  }
+  console.log("DIDs added to DIDM system.");
+};
+
+const addCredentialSchemas = async (provider, didmSystem) => {
+  for (let template of credentialTemplates) {
+    let signer = provider.getSigner(template.signerNumber);
+    let didmSystemAsSigner = didmSystem.connect(signer);
+    let hash = ethers.utils.id(template.schema);
+    let type = ethers.utils.hexlify(ethers.utils.zeroPad(ethers.utils.toUtf8Bytes(template.credentialType), 32));
+    await didmSystemAsSigner.createTemplate(hash, type);
+  }
+  console.log("Credential schemas added to DIDM system.");
+};
+
+const sumbitCredentialRecords = async (provider, didmSystem) => {
+  for (let cred of digitalCredentials){
+    let credential = fs.readFileSync(cred.path, 'utf8');
+    let credentialHash = ethers.utils.id(credential);
+    let signer = provider.getSigner(cred.issuerNumber);
+    let didmSystemAsSigner = didmSystem.connect(signer);
+    await didmSystemAsSigner.createDCRecord(credentialHash, cred.recoveryAddress);
+    
+  }
+  console.log("Credential records added to DIDM system.")
+}
 
 async function main() {
   // Hardhat always runs the compile task when running scripts with its command
@@ -27,6 +139,20 @@ async function main() {
   await transportationOrderLogger.deployed();
 
   console.log("Logger deployed to:", transportationOrderLogger.address);
+
+  const DIDMSystem = await hre.ethers.getContractFactory("DIDMSystem");
+  const didmSystem = await DIDMSystem.deploy();
+
+  await didmSystem.deployed();
+
+  console.log("DIDM System deployed to:", didmSystem.address);
+
+  const provider = new ethers.providers.JsonRpcProvider();
+
+  await createDIDs([0, 1, 3, 4, 5, 14, 15, 16, 17, 18, 19], provider, didmSystem);
+  await addCredentialSchemas(provider, didmSystem);
+  await sumbitCredentialRecords(provider, didmSystem);
+
 }
 
 // We recommend this pattern to be able to use async/await everywhere

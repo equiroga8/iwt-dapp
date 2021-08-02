@@ -8,9 +8,11 @@ import LocalAtmIcon from '@material-ui/icons/LocalAtm';
 import TransportationOrderFactory from '../artifacts/contracts/TransportationOrderFactory.sol/TransportationOrderFactory.json';
 import TransportationOrderLogger from '../artifacts/contracts/TransportationOrderLogger.sol/TransportationOrderLogger.json';
 import { ethers } from 'ethers';
-import { WEI_VAL, codeToPort, DEC_PLACES_REGEX, LOGGER_ADDR, FACT_ADDR } from '../helper';
+import { WEI_VAL, codeToPort, DEC_PLACES_REGEX, FACT_ADDR } from '../helper';
 import Alert from '@material-ui/lab/Alert';
 import { createTable } from '../ddbMethods';
+import {LOGGER_ADDR} from '../src/constants';
+
 
 const useStyles = makeStyles((theme) => ({
   formControl: {
@@ -77,7 +79,7 @@ export default function OrderForm() {
       let estimatedGasPrice = await factContract.estimateGas.createTransportOrder(
         ethers.utils.hexlify([1, 2, 3, 4, 5]),
         ethers.utils.hexlify([1, 2, 3, 4, 5]),
-        deadline.getTime(),
+        111111111,
         0,
         20,
         {value: '0' }
@@ -88,7 +90,7 @@ export default function OrderForm() {
     }
     requestAccount();
     
-  },);
+  },[]);
 
   const handleDateChange = (date) => {
     setDeadline(date);
