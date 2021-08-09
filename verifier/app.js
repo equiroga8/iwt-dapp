@@ -11,18 +11,9 @@ AWS.config.update({
 });
 
 const LOGGER_ADDR = '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512';
-const DIDM_ADDR = '0x162A433068F51e18b7d13932F27e66a3f99E6890';
+const DIDM_ADDR = '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0';
 const FAKE_PRIVATE_KEY = '0xdf57089febbacf7ba0bc227dafbffa9fc08a93fdc68e1e42411a14efcf23656e';
-/*
-if (typeof web3 !== 'undefined') {
-  web3 = new Web3(web3.currentProvider);
-} else {
-  // set the provider you want from Web3.providers
-  web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
-}
 
-*/
-//const LOGGER_ADDR  = '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512';
 const provider = new ethers.providers.JsonRpcProvider();
 const signer = provider.getSigner(19);
 const loggerContract = new ethers.Contract(LOGGER_ADDR, TransportationOrderLogger.abi, signer);
@@ -53,7 +44,7 @@ provider.once("block", () => {
         const result = await didmContract.verifyDID(clientDID);
         const transportationOrder = new ethers.Contract(orderAddress, TransportationOrder.abi, signer);
         await transportationOrder.verificationResult(result);
-        console.log(`Order '${orderAddress}' with client DID ${clientDID} ${result ? 'has been created': 'has been rejected'}`);
+        console.log(`Order '${orderAddress}' with client DID ${clientDID} ${result ? 'has been created': 'has been canceled'}`);
     });
 
     loggerContract.on("OrderAssignmentRequest", async (orderAddress, operatorDID, uuid) => {
@@ -67,17 +58,41 @@ provider.once("block", () => {
             FAKE_PRIVATE_KEY,
             encryptedObject
         );
+
         const [...decryptedPayload] = JSON.parse(decrypted);
+
+        console.log(`Decrypted payload: ${decryptedPayload}`);
+
+        let result = true;
+        let neededCredentials = ["", "", ""];
         for (let credential of decryptedPayload) {
             // check signature and DIDs
+            console.log("For credential:");
+            console.log("Credential");
             const signatureAddress = EthCrypto.recover(
                 credential.proof.signature,
                 EthCrypto.hash.keccak256(credential.credential)
             );
+            const signatureValid = signatureAddress === credential.issuer;
+            console.log(`Signature address: ${signatureAddress}`);
+            console.log(`Actual address: ${credential.issuer}`);
+            console.log(`Are they the same address? -> ${signatureValid}`);
             
+            const issuerDIDValid = await didmContract.verifyDID(credential.issuer);
+            const subjectDIDValid = await didmContract.verifyDID(credential.subject);
+            
+            console.log(`Issuer DID ${credential.issuer} is valid? -> ${issuerDIDValid}`);
+            console.log(`Subject DID ${credential.subject} is valid? -> ${subjectDIDValid}`);
+
+            const hashedCredential = ethers.utils.id(credential);
+            const credentialValid = await didmContract.verifyDCRecord(hashedCredential);
+            console.log(`Credential hash ${hashedCredential} is valid? -> ${credentialValid}`);
+            console.log('-------------------------------------------------');
+
+            result &= signatureValid && issuerDIDValid && subjectDIDValid && credentialValid;
         }
-        // for every credential check if there is a record and it's valid, if the signature is valid and check the DIDs of issuer and subject.
-        // If everything is okay send the okay with the function.
+
+        console.log(`All check passed: ${result}`)
 
     });
 

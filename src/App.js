@@ -12,10 +12,10 @@ import Typography from '@material-ui/core/Typography';
 import IconButton from '@material-ui/core/IconButton';
 import DirectionsBoatTwoToneIcon from '@material-ui/icons/DirectionsBoatTwoTone';
 import TabPanel from './components/TabPanel';
-import AvailableOrdersList from './components/AvailableOrdersList';
-import IconTitle from './components/IconTitle';
-import SignData from './components/SignData';
+import OrdersList from './components/OrdersList';
 import { Grid } from '@material-ui/core';
+import OrderCardExtra from './components/OrderCardExtra';
+import OrderDialog from './components/OrderDialog';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -64,16 +64,13 @@ export default function App() {
               <OrderForm />
             </Route>
             <Route path="/orders">
-              <AvailableOrdersList />
-            </Route>
-            <Route path="/ongoing-orders">
-              <IconTitle />
+              <OrdersList />
             </Route>
             <Route path="/my-orders">
-              <IconTitle />
+              <OrderCardExtra />
             </Route>
             <Route path="/sign-data">
-              <SignData />
+              <OrderDialog />
             </Route>
           </Switch>
         </Grid>  

@@ -17,16 +17,10 @@ contract TransportationOrderLogger {
         emit OrderCreationRequest(_orderAddress, tx.origin);
     }
     
-    event OrderCreated(address contractAddr, address clientDID);
+    event OrderVerificationResult(address contractAddr, address clientDID, bool success);
     
-    function orderCreatedEvent(address _orderAddress, address _clientDID) public {
-        emit OrderCreated(_orderAddress, _clientDID);
-    }
-    
-    event OrderCanceled(address contractAddr, address clientDID);
-    
-    function orderCanceledEvent(address _orderAddress, address _clientDID) public {
-        emit OrderCanceled(_orderAddress, _clientDID);
+    function orderVerificationResultEvent(address _orderAddress, address _clientDID, bool _success) public {
+        emit OrderVerificationResult(_orderAddress, _clientDID, _success);
     }
     
     event OrderAssignmentRequest(address contractAddr, address operatorDID, bytes32 uuid);
@@ -41,16 +35,16 @@ contract TransportationOrderLogger {
         emit OrderAssigned(_orderAddress, _operatorDID);
     }
     
-    event InspectorRoleRequest(address orderAddress, address _did, bytes32 uuid);
+    event InspectorOriginRoleRequest(address orderAddress, address _did, bytes32 uuid);
     
-    function inspectorRoleRequestEvent(address _orderAddress, address _inspectorDID, bytes32 _uuid) public {
-        emit InspectorRoleRequest(_orderAddress, _inspectorDID, _uuid);
+    function inspectorOriginRoleRequestEvent(address _orderAddress, address _inspectorOriginDID, bytes32 _uuid) public {
+        emit InspectorOriginRoleRequest(_orderAddress, _inspectorOriginDID, _uuid);
     }
     
-    event InspectorRoleAssigned(address orderAddress, address _did);
+    event InspectorOriginRoleAssigned(address orderAddress, address _did);
 
-    function inspectorRoleAssignedEvent(address _orderAddress, address _inspectorDID) public {
-        emit InspectorRoleAssigned(_orderAddress, _inspectorDID);
+    function inspectorOriginRoleAssignedEvent(address _orderAddress, address _inspectorOriginDID) public {
+        emit InspectorOriginRoleAssigned(_orderAddress, _inspectorOriginDID);
     }
     
     event GaugerRoleRequest(address orderAddress, address _did, bytes32 uuid);
@@ -58,10 +52,55 @@ contract TransportationOrderLogger {
     function gaugerRoleRequestEvent(address _orderAddress, address _gaugerDID, bytes32 _uuid) public {
         emit GaugerRoleRequest(_orderAddress, _gaugerDID, _uuid);
     }
+
+    
     
     event GaugerRoleAssigned(address orderAddress, address _did);
     
     function gaugerRoleAssignedEvent(address _orderAddress, address _gaugerDID) public {
         emit GaugerRoleAssigned(_orderAddress, _gaugerDID);
+    }
+
+
+    event GaugeRequested(address orderAddress, address _did);
+    
+    function gaugeRequestedEvent(address _orderAddress, address _gaugerDID) public {
+        emit GaugeRequested(_orderAddress, _gaugerDID);
+    }
+
+    event OriginEmptyGaugeRegistered(address orderAddress);
+    
+    function originEmptyGaugeRegisteredEvent(address _orderAddress) public {
+        emit OriginEmptyGaugeRegistered(_orderAddress);
+    }
+
+    event OriginFullGaugeRegistered(address orderAddress);
+    
+    function originFullGaugeRegisteredEvent(address _orderAddress) public {
+        emit OriginFullGaugeRegistered(_orderAddress);
+    }
+    
+    event InspectorDestinationRoleRequest(address orderAddress, address _did, bytes32 uuid);
+    
+    function inspectorDestinationRoleRequestEvent(address _orderAddress, address _inspectorDestinationDID, bytes32 _uuid) public {
+        emit InspectorDestinationRoleRequest(_orderAddress, _inspectorDestinationDID, _uuid);
+    }
+    
+    event InspectorDestinationRoleAssigned(address orderAddress, address _did);
+
+    function inspectorDestinationRoleAssignedEvent(address _orderAddress, address _inspectorDestinationDID) public {
+        emit InspectorDestinationRoleAssigned(_orderAddress, _inspectorDestinationDID);
+    }
+
+    event DestinationEmptyGaugeRegistered(address orderAddress);
+    
+    function destinationEmptyGaugeRegisteredEvent(address _orderAddress) public {
+        emit DestinationEmptyGaugeRegistered(_orderAddress);
+    }
+
+    event DestinationFullGaugeRegistered(address orderAddress);
+    
+    function destinationFullGaugeRegisteredEvent(address _orderAddress) public {
+        emit DestinationFullGaugeRegistered(_orderAddress);
     }
 }

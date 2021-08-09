@@ -8,7 +8,7 @@ import ArrowForwardIcon from '@material-ui/icons/ArrowForward';
 import AccountCircleOutlinedIcon from '@material-ui/icons/AccountCircleOutlined';
 import IconTitle from './IconTitle';
 import OrderRequiredCredentials from './OrderRequiredCredentials';
-import { hexToInt, hexToPortName, WEI_VAL, readAllFiles, VERIFIER_PUB_Key, hashObjects } from '../helper';
+import { readAllFiles, VERIFIER_PUB_Key, hashObjects } from '../helper';
 import { uploadCredentialsToDDB } from '../ddbMethods';
 import EthCrypto from 'eth-crypto';
 
@@ -37,18 +37,18 @@ export default function OrderCard(props) {
 
   const [credentials, setCredentials] = useState([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
-  const [role, setRole] = useState('Operator');
+
 
  useEffect(()=>{
     const uploadCredentials = async () => {
-      console.log(credentials);
+      //console.log(credentials);
       const encrypted = await EthCrypto.encryptWithPublicKey(
         VERIFIER_PUB_Key, 
         JSON.stringify(credentials)
       );
 
       const encryptedString = EthCrypto.cipher.stringify(encrypted);
-      console.log(encryptedString);
+      //console.log(encryptedString);
       uploadCredentialsToDDB('Credentials', hashObjects(credentials), encryptedString);
 
     }
@@ -95,7 +95,7 @@ export default function OrderCard(props) {
                 </Typography>
               </Grid>
               <Grid item xs={2} container >
-                  <IconTitle icon={<FiberManualRecordOutlinedIcon/>} text={hexToPortName(props.orderData.originPort)} color={"textSecondary"}/>
+                  <IconTitle icon={<FiberManualRecordOutlinedIcon/>} text={props.orderData.originPort} color={"textSecondary"}/>
               </Grid>
                 <Grid item xs={1} container noWrap>
                     <Grid item>
@@ -103,12 +103,12 @@ export default function OrderCard(props) {
                     </Grid>
                 </Grid>
                 <Grid item xs={2} container>
-                  <IconTitle icon={<LocationOnOutlinedIcon/>} text={hexToPortName(props.orderData.destinationPort)} color={"textSecondary"}/>
+                  <IconTitle icon={<LocationOnOutlinedIcon/>} text={props.orderData.destinationPort} color={"textSecondary"}/>
                 </Grid>    
             </Grid>
             <Grid item sm={2} xs={12}>
               <Typography variant="h3" component="h3">
-                {hexToInt(props.orderData.orderPayout._hex) / WEI_VAL} Ξ
+                {props.orderData.orderPayout} Ξ
               </Typography>
             </Grid>
             <Grid item xs={12}>
@@ -119,8 +119,7 @@ export default function OrderCard(props) {
                 credentials={credentials} 
                 handleChange={handleChange} 
                 loadingFiles={loadingFiles}
-                role={role}
-                setRole={setRole}
+                role={props.role}
               />
             </Grid>
             <Grid item sm={6} xs={12} container spacing={1}>
@@ -129,7 +128,7 @@ export default function OrderCard(props) {
                 deadline={props.orderData.deadline} 
                 cargoType={props.orderData.cargoType} 
                 client={props.orderData.client}
-                cargoLoad={hexToInt(props.orderData.cargoLoad._hex)/100}
+                cargoLoad={props.orderData.cargoLoad}
               />
             </Grid>
           </Grid>
@@ -143,7 +142,7 @@ export default function OrderCard(props) {
               startIcon={<AccountCircleOutlinedIcon />}
               disabled={credentials.length === 0}
             >
-              Apply for {role} role
+              Apply for {props.role} role
             </Button>
           </Grid>
         </CardActions>

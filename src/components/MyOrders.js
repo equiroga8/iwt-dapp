@@ -5,8 +5,7 @@ import { ethers } from 'ethers';
 import { useState, useEffect } from 'react';
 import { Grid } from '@material-ui/core';
 import OrderCard from './OrderCard';
-import FiltersSection from './FiltersSection';
-import { orderState, filterByState, FACT_ADDR } from '../helper';
+import { FACT_ADDR, hexToInt, WEI_VAL, hexToPortName, cargoTypes, filterByAddress } from '../helper';
 
 const useStyles = makeStyles((theme) => ({
   filtersContainer: {
@@ -14,16 +13,15 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-
-export default function OrderForm() {
+export default function MyOrders() {
 
    const classes = useStyles();
 
-  const [ordersData, setOrdersData] = useState([])
+  const [ordersData, setOrdersData] = useState([]);
 
   useEffect(() => getTransportationOrders(), []);
 
-  async function getTransportationOrders() {
+  const getTransportationOrders = async () => {
     if (typeof window.ethereum !== 'undefined') {
       try {
         const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -40,19 +38,39 @@ export default function OrderForm() {
           const deadline = await orderContract.deadline();
           const orderState = await orderContract.orderState();
           const cargoLoad = await orderContract.cargoLoad();
+          const cargoDetailsOrigin = await orderContract.cargoDetailsOrigin();
+          const cargoDetailsDestination = await orderContract.cargoDetailsDestination();
+          const originGauge = await orderContract.originGauge();
+          const destinationGauge = await orderContract.destinationGauge();
+          const operator = await orderContract.operator();
+          const gaugingSensor = await orderContract.gaugingSensor();
+          const cargoInspectorOrigin = await orderContract.cargoInspectorOrigin();
+          const cargoInspectorDestination = await orderContract.cargoInspectorDestination();
+
+          // Get every attribute.
           newOrdersData.push({
             address: transportationOrders[i], 
-            originPort,
-            destinationPort,
+            originPort: hexToPortName(originPort),
+            destinationPort: hexToPortName(destinationPort),
             client,
-            orderPayout,
-            cargoType,
-            deadline,
+            orderPayout: hexToInt(orderPayout._hex) / WEI_VAL,
+            cargoType: cargoTypes.get(cargoType),
+            deadline: hexToInt(deadline._hex),
             orderState,
-            cargoLoad
+            cargoLoad: hexToInt(cargoLoad._hex) / 100,
+            cargoDetailsOrigin,
+            cargoDetailsDestination,
+            originGauge,
+            destinationGauge,
+            operator,
+            gaugingSensor,
+            cargoInspectorDestination,
+            cargoInspectorOrigin
           });
         }
-        setOrdersData(filterByState(newOrdersData, orderState.INITIAL));
+        //console.log(JSON.stringify({ orders: newOrdersData}));
+        const signer = provider.getSigner();
+        setOrdersData(filterByAddress(newOrdersData, await signer.getAddress()));
       } catch (err) {
         console.log(err);
       }
@@ -62,12 +80,9 @@ export default function OrderForm() {
 
   return (
     <Grid container spacing={0}>
-      <Grid item xs={2} className={classes.filtersContainer}>
-        <FiltersSection />
-      </Grid>
       <Grid item xs={10}>
         {ordersData.map((orderData, index) => 
-          <OrderCard key={index} orderData={orderData} onlyInitial={true}/>
+          <OrderCard key={index} orderData={orderData}/>
         )}
       </Grid>
     </Grid> 

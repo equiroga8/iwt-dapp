@@ -4,7 +4,6 @@ import Paper from '@material-ui/core/Paper';
 import Tabs from '@material-ui/core/Tabs';
 import Tab from '@material-ui/core/Tab';
 import AddBoxRoundedIcon from '@material-ui/icons/AddBoxRounded';
-import FormatListBulletedRoundedIcon from '@material-ui/icons/FormatListBulletedRounded';
 import DescriptionRoundedIcon from '@material-ui/icons/DescriptionRounded';
 import MenuOpenOutlinedIcon from '@material-ui/icons/MenuOpenOutlined';
 import CreateIcon from '@material-ui/icons/Create';
@@ -27,7 +26,7 @@ export default function CenteredTabs() {
   const classes = useStyles();
   const [value, setValue] = useState(0);
 
-  const allTabs = ['/create', '/orders', '/ongoing-orders', '/my-orders', '/sign-data'];
+  const allTabs = ['/create', '/orders', '/my-orders', '/sign-data'];
 
   const handleChange = (event, newValue) => {
     setValue(newValue);
@@ -56,18 +55,9 @@ export default function CenteredTabs() {
               wrapper: classes.iconLabelWrapper,
               labelContainer: classes.labelContainer
             }} 
-            label="Available orders" 
-            icon={<FormatListBulletedRoundedIcon style={{ display: "inline-block", marginBottom:"-1px", marginRight: "6px" }}/>}
-            component={Link} to={allTabs[1]}
-        />
-        <Tab 
-            classes={{
-              wrapper: classes.iconLabelWrapper,
-              labelContainer: classes.labelContainer
-            }} 
-            label="Ongoing orders" 
+            label="Orders" 
             icon={<MenuOpenOutlinedIcon style={{ display: "inline-block", marginBottom:"-1px", marginRight: "6px" }}/>}
-            component={Link} to={allTabs[2]}
+            component={Link} to={allTabs[1]}
         />
         <Tab 
             classes={{
@@ -76,7 +66,7 @@ export default function CenteredTabs() {
             }} 
             label="My orders" 
             icon={<DescriptionRoundedIcon style={{ display: "inline-block", marginBottom:"-1px", marginRight: "6px" }}/>}
-            component={Link} to={allTabs[3]}
+            component={Link} to={allTabs[2]}
         />
         <Tab 
             classes={{
@@ -85,7 +75,7 @@ export default function CenteredTabs() {
             }} 
             label="Sign message" 
             icon={<CreateIcon style={{ display: "inline-block", marginBottom:"-1px", marginRight: "6px" }}/>}
-            component={Link} to={allTabs[4]}
+            component={Link} to={allTabs[3]}
         />
       </Tabs>
     </Paper>

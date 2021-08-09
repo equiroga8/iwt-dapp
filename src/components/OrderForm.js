@@ -8,11 +8,9 @@ import LocalAtmIcon from '@material-ui/icons/LocalAtm';
 import TransportationOrderFactory from '../artifacts/contracts/TransportationOrderFactory.sol/TransportationOrderFactory.json';
 import TransportationOrderLogger from '../artifacts/contracts/TransportationOrderLogger.sol/TransportationOrderLogger.json';
 import { ethers } from 'ethers';
-import { WEI_VAL, codeToPort, DEC_PLACES_REGEX, FACT_ADDR } from '../helper';
+import { WEI_VAL, codeToPort, DEC_PLACES_REGEX, FACT_ADDR,LOGGER_ADDR } from '../helper';
 import Alert from '@material-ui/lab/Alert';
 import { createTable } from '../ddbMethods';
-import {LOGGER_ADDR} from '../src/constants';
-
 
 const useStyles = makeStyles((theme) => ({
   formControl: {
@@ -62,6 +60,7 @@ export default function OrderForm() {
   const [factoryContract, setFactoryContract] = useState();
   const [gasPrice, setGasPrice] = useState();
   const [loggerContract, setLoggerContract] = useState();
+  const [signerAddr, setSignerAddr] = useState();
 
   const [status, setStatus] = useState();
   const [loading, setLoading] = useState(false);
@@ -75,6 +74,7 @@ export default function OrderForm() {
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const currentGasPrice = await provider.getGasPrice();
       const signer = provider.getSigner();
+      setSignerAddr(await signer.getAddress());
       const factContract = new ethers.Contract(FACT_ADDR, TransportationOrderFactory.abi, signer);
       let estimatedGasPrice = await factContract.estimateGas.createTransportOrder(
         ethers.utils.hexlify([1, 2, 3, 4, 5]),
@@ -105,6 +105,7 @@ export default function OrderForm() {
     setCargoLoad();
   };
   
+
   const submitOrder = async () => {
     let value = payout * WEI_VAL;
     setLoading(true);
@@ -120,18 +121,26 @@ export default function OrderForm() {
         {value: value.toString() }
       );
       await transaction.wait();
-      await loggerContract.once('OrderCreationRequest', async (orderAddr) => {
-        await createTable(orderAddr);
+      await loggerContract.once('OrderVerificationResult', async (orderAddr, clientDID, success) => {
+        console.log(`OrderVerificationResult: ${success} for order ${orderAddr} with client ${clientDID}`);
+        if (clientDID === signerAddr) {
+          if (success) {
+            await createTable(orderAddr);
+            setStatus({error: false, msg: 'Your order has been succesfully created'});
+            console.log("Table created");
+          } else {
+            setStatus({error: true, msg: "This address cannot be found in the DIDM system"});
+            console.log()
+          }
+          setLoading(false);
+        }
       });
-    
-
-    setStatus({error: false, msg: 'Your order has been succesfully created'});
     resetState();
-    
     } catch (error) {
-      setStatus({error: true, msg: error.message})
+      setStatus({error: true, msg: error.message});
+      setLoading(false);
     }
-    setLoading(false);
+    
   }
 
   return (
@@ -282,7 +291,9 @@ export default function OrderForm() {
             >
               Create order
             </Button>
-            {loading && <CircularProgress size={24} className={classes.buttonProgress} />}
+            {loading && 
+                <CircularProgress size={24} className={classes.buttonProgress} />
+            }
           </label>
         </Grid>
       </Grid>

@@ -1,6 +1,6 @@
 import { makeStyles } from '@material-ui/core/styles';
-import { Grid, Typography, Fab, CircularProgress, FormControl, Select, InputLabel, MenuItem } from '@material-ui/core';
-import { hashObjects, roleCredentials } from '../helper';
+import { Grid, Typography, Fab, CircularProgress } from '@material-ui/core';
+import { hashObjects } from '../helper';
 import CloudDoneIcon from '@material-ui/icons/CloudDone';
 import CloudUploadOutlinedIcon from '@material-ui/icons/CloudUploadOutlined';
 
@@ -29,35 +29,27 @@ export default function OrderRequiredCredentials(props) {
   const classes = useStyles();
 
   return (
-    <Grid container spacing={2} className={classes.container}>
+    <Grid container spacing={1} className={classes.container}>
       <Grid item xs={12}>
         <Typography variant="h6" component="h6">
           Required credentials:
         </Typography>
       </Grid>
-      <Grid item xs={12}>
-        <FormControl variant="filled" className={classes.input}>
-          <InputLabel id="role-select-label">Role</InputLabel>
-          <Select
-            key="role-select"
-            labelId="role-select-label"
-            id="role-select"
-            value={props.role}
-            onChange={ e => props.setRole(e.target.value)}
-          >
-            {[...roleCredentials.keys()].map((role, index) => 
-              <MenuItem key={index} value={role}>{role}</MenuItem>
-            )}
-          </Select>
-        </FormControl>
-      </Grid>
-      
       <Grid item sm={8} xs={12} container>
-      
         <Typography variant="subtitle1" component="h6" color="textSecondary">
-          <ul>
-            {roleCredentials.get(props.role).map((credential, index) => <li key={index}>{credential}</li>)}
-          </ul>
+
+            { props.onlyInitial ? 
+              <ul>
+                <li>Boating licence</li>
+                <li>Barge registration</li>
+                <li>Hazardous transport permit</li>
+              </ul>
+              :
+              <ul>
+                <li>Barge inspector license</li>
+              </ul>
+            }
+
         </Typography>
       </Grid>
       {props.credentials.length !== 0 && 
