@@ -1,10 +1,10 @@
 import { makeStyles } from '@material-ui/core/styles';
-import { Grid, Typography, Button } from '@material-ui/core';
+import { Grid, Typography, Button, CircularProgress } from '@material-ui/core';
 import FiberManualRecordOutlinedIcon from '@material-ui/icons/FiberManualRecordOutlined';
 import LocationOnOutlinedIcon from '@material-ui/icons/LocationOnOutlined';
 import OpacityIcon from '@material-ui/icons/Opacity';
 
-const useStyles = makeStyles({
+const useStyles = makeStyles((theme) => ({
   container: {
     marginBottom: 5
   },
@@ -16,15 +16,24 @@ const useStyles = makeStyles({
     marginTop: -3,
     paddingLeft: 5
   },
-});
+  wrapper: {
+    position: 'relative',
+  },
+  buttonProgress: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    marginTop: -14,
+    marginLeft: 0  },
+}));
 
 export default function GaugingSection(props) {
 
   const classes = useStyles();
   const handleButtonClick = (dialogType) => {
-    console.log("Click Clack");
+
     props.setCurrentDialogType(dialogType);
-    props.handleClick()
+    props.handleClick(dialogType);
   }
   return(
     <Grid container spacing={3} className={classes.container}>
@@ -47,6 +56,18 @@ export default function GaugingSection(props) {
             Origin
           </Typography>
         </Grid>
+          <div className={classes.wrapper}>
+            <Button 
+              variant="outlined" 
+              size="small"
+              style={{marginLeft: 30, marginTop: -2}}
+              onClick={(e) => props.requestGauge()}
+              disabled={!props.originRequestGauge || props.loading}
+            > 
+              Request gauge
+            </Button>
+            {props.loading && props.originRequestGauge && <CircularProgress size={24} className={classes.buttonProgress} />}
+          </div> 
       </Grid> 
       <Grid container item xs={6}>
         <Grid item >
@@ -57,6 +78,18 @@ export default function GaugingSection(props) {
             Destination
           </Typography>
         </Grid>
+        <div className={classes.wrapper}>
+          <Button 
+            variant="outlined" 
+            size="small"
+            style={{marginLeft: 30, marginTop: -2}}
+            onClick={(e) => props.requestGauge()}
+            disabled={!props.destinationRequestGauge || props.loading}
+          > 
+            Request gauge
+          </Button>
+          {props.loading && props.destinationRequestGauge && <CircularProgress size={24} className={classes.buttonProgress} />}
+        </div> 
       </Grid> 
       <Grid container item xs={6}>
         <Grid item >
@@ -67,6 +100,7 @@ export default function GaugingSection(props) {
         > 
           {props.originGauge.text}
         </Button>
+        
         </Grid>
       </Grid> 
       <Grid container item xs={6}>

@@ -110,15 +110,17 @@ contract TransportationOrder {
      */
      
     
-    function requestShipperRole(bytes32 _uuid) public {
+    function requestOperatorRole(bytes32 _uuid) public {
         require(operator.did == address(0x0) && orderState == State.INITIAL);
         logger.orderAssignmentRequestEvent(address(this), msg.sender, _uuid);
     }
     
-    function assignShipperRole(bytes32 _uuid, address payable _did) public isVerifier(msg.sender) {
-        operator = PayableParticipant(_uuid, _did);
-        orderState = State.ASSIGNED;
-        logger.orderAssignedEvent(address(this), _did);
+    function assignOperatorRole(bytes32 _uuid, address payable _did, bool _success) public isVerifier(msg.sender) {
+        if (_success) {
+            operator = PayableParticipant(_uuid, _did);
+            orderState = State.ASSIGNED;
+        }
+        logger.orderAssignedEvent(address(this),_did, _success);
     }
     
     /**
@@ -130,9 +132,11 @@ contract TransportationOrder {
         logger.inspectorOriginRoleRequestEvent(address(this), msg.sender, _uuid);
     }
     
-    function assignOriginInspectorRole(bytes32 _uuid, address _did) public isVerifier(msg.sender) {
-        cargoInspectorOrigin = Participant(_uuid, _did);
-        logger.inspectorOriginRoleAssignedEvent(address(this), _did);
+    function assignOriginInspectorRole(bytes32 _uuid, address _did, bool _success) public isVerifier(msg.sender) {
+        if (_success) {
+            cargoInspectorOrigin = Participant(_uuid, _did);
+        }
+        logger.inspectorOriginRoleAssignedEvent(address(this), _did, _success);
     }
     
     function registerOriginInspectionReport(bytes32 _inspectionReport) public {
@@ -153,19 +157,22 @@ contract TransportationOrder {
      */
 
     function requestGaugerRole(bytes32 _uuid) public {
-        require(gaugingSensor.did == address(0x0) && (orderState == State.ASSIGNED || orderState == State.INSPECTED_ORIGIN));
+        require(gaugingSensor.did == address(0x0) && (orderState == State.ASSIGNED || orderState == State.REPORT_ORIGIN_SIGNED));
         logger.gaugerRoleRequestEvent(address(this), msg.sender, _uuid);
     }
     
-    function assignGaugerRole(bytes32 _uuid, address _did) public isVerifier(msg.sender) {
-        gaugingSensor = Participant(_uuid, _did);
-        logger.gaugerRoleAssignedEvent(address(this), msg.sender);
+    function assignGaugerRole(bytes32 _uuid, address _did, bool _success) public isVerifier(msg.sender) {
+        if (_success) {
+            gaugingSensor = Participant(_uuid, _did);
+        }
+        logger.gaugerRoleAssignedEvent(address(this), _did, _success);
     }
 
     function requestGauging() public {
         require(msg.sender == operator.did && 
             (orderState == State.ASSIGNED || orderState == State.REPORT_ORIGIN_SIGNED 
-            || orderState == State.IN_TRANSIT || orderState == State.REPORT_ORIGIN_SIGNED), 
+            || orderState == State.IN_TRANSIT || orderState == State.REPORT_ORIGIN_SIGNED 
+            || orderState == State.LOADED || orderState == State.UNLOADED),
             'Only the operator can request the gauge.');
         logger.gaugeRequestedEvent(address(this), gaugingSensor.did);
     }
@@ -182,7 +189,7 @@ contract TransportationOrder {
     function signOriginGauge(bytes32 _signedMeasurement, bool _isEmptyMeasurement) public {
         require(operator.did == msg.sender 
             && (orderState == State.ORIGIN_EMPTY_GAUGED || orderState == State.ORIGIN_FULL_GAUGED),
-            'Only gauger can submit a measurement');
+            'Only the operator can sign gauge details');
         originGauge = _signedMeasurement;
         if(_isEmptyMeasurement) {
             orderState = State.LOADED;
@@ -218,7 +225,7 @@ contract TransportationOrder {
         require(operator.did == msg.sender && 
             (orderState == State.DESTINATION_FULL_GAUGED || orderState == State.DESTINATION_EMPTY_GAUGED),
             'Only the operator can do this action.');
-        originGauge = _signedMeasurement;
+        destinationGauge = _signedMeasurement;
         if(_isFullMeasurement) {
             orderState = State.UNLOADED;
         } else {
@@ -231,7 +238,7 @@ contract TransportationOrder {
         require((gaugingSensor.did == msg.sender ) 
          && orderState == State.UNLOADED);
         destinationGauge = _destinationGaugeEmpty;
-        orderState = State.DESTINATION_FULL_GAUGED;
+        orderState = State.DESTINATION_EMPTY_GAUGED;
         logger.destinationEmptyGaugeRegisteredEvent(address(this));
     }
 
@@ -244,9 +251,11 @@ contract TransportationOrder {
         logger.inspectorDestinationRoleRequestEvent(address(this), msg.sender, _uuid);
     }
     
-    function assignDestinationInspectorRole(bytes32 _uuid, address _did) public isVerifier(msg.sender) {
-        cargoInspectorDestination = Participant(_uuid, _did);
-        logger.inspectorDestinationRoleAssignedEvent(address(this), _did);
+    function assignDestinationInspectorRole(bytes32 _uuid, address _did, bool _success) public isVerifier(msg.sender) {    
+        if (_success) {
+            cargoInspectorDestination = Participant(_uuid, _did);
+        }
+        logger.inspectorDestinationRoleAssignedEvent(address(this), _did, _success);
     }
     
     function registerDestinationInspectionReport(bytes32 _inspectionReport) public {
@@ -256,24 +265,14 @@ contract TransportationOrder {
     }
 
     function signDestinationInspectionReport(bytes32 _signedReport) public {
-        require(cargoInspectorDestination.did == msg.sender && orderState == State.INSPECTED_DESTINATION);
+        require(operator.did == msg.sender && orderState == State.INSPECTED_DESTINATION);
         cargoDetailsDestination = _signedReport;
         orderState = State.REPORT_DESTINATION_SIGNED;
     }
-    
-    
-    
-    
+      
      /**
-     * @notice Canceling the contract
+     * @notice Cancelling the contract
      */
-    
-    /*
-    function completeOrder() public {
-        require(client == msg.sender && orderState == State.COMPLETED);
-        payable(operator.did).transfer(address(this).balance);
-    }
-    */
     
     function cancelOrder() public {
         require(orderState != State.COMPLETED && msg.sender == operator.did);

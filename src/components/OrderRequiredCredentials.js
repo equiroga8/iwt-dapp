@@ -1,6 +1,6 @@
 import { makeStyles } from '@material-ui/core/styles';
 import { Grid, Typography, Fab, CircularProgress } from '@material-ui/core';
-import { hashObjects } from '../helper';
+import { hashObjects, OPERATOR } from '../helper';
 import CloudDoneIcon from '@material-ui/icons/CloudDone';
 import CloudUploadOutlinedIcon from '@material-ui/icons/CloudUploadOutlined';
 
@@ -38,7 +38,7 @@ export default function OrderRequiredCredentials(props) {
       <Grid item sm={8} xs={12} container>
         <Typography variant="subtitle1" component="h6" color="textSecondary">
 
-            { props.onlyInitial ? 
+            { props.role === OPERATOR ? 
               <ul>
                 <li>Boating licence</li>
                 <li>Barge registration</li>
@@ -52,13 +52,6 @@ export default function OrderRequiredCredentials(props) {
 
         </Typography>
       </Grid>
-      {props.credentials.length !== 0 && 
-        <Grid item sm={8} xs={12} container>
-          <Typography variant="body2" component="h6">
-            {hashObjects(props.credentials)}
-          </Typography>
-        </Grid>
-      }
       <Grid item xs={12} container className={classes.fab}>
       <label htmlFor="upload-cred">
         <input
@@ -81,7 +74,7 @@ export default function OrderRequiredCredentials(props) {
           <CloudUploadOutlinedIcon style={{ marginRight: 7 }}/> :
           <CloudDoneIcon style={{ marginRight: 7 }}/>
           }
-          Upload credential(s)
+          {`${props.credentials.length === 0 ? 'Upload' : 'Change'} credential(s)`}
           </Fab>
           {props.loadingFiles && <CircularProgress size={24} className={classes.buttonProgress} />}
         </label>

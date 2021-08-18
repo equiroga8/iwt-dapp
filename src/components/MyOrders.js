@@ -3,8 +3,8 @@ import TransportationOrderFactory from '../artifacts/contracts/TransportationOrd
 import TransportationOrder from '../artifacts/contracts/TransportationOrder.sol/TransportationOrder.json';
 import { ethers } from 'ethers';
 import { useState, useEffect } from 'react';
-import { Grid } from '@material-ui/core';
-import OrderCard from './OrderCard';
+import { Grid, CircularProgress, Typography } from '@material-ui/core';
+import OrderCardExtra from './OrderCardExtra';
 import { FACT_ADDR, hexToInt, WEI_VAL, hexToPortName, cargoTypes, filterByAddress } from '../helper';
 
 const useStyles = makeStyles((theme) => ({
@@ -18,10 +18,97 @@ export default function MyOrders() {
    const classes = useStyles();
 
   const [ordersData, setOrdersData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [currAddress, setCurrAddress] = useState('');
+  const [currSigner, setCurrSigner] = useState('');
+  const [reload, setReload] = useState('');
+  const [focusedAddr, setFocusedAddr] = useState('');
+  const [focusedOrder, setFocusedOrder] = useState();
 
-  useEffect(() => getTransportationOrders(), []);
+  useEffect(() => {
+    async function listenMMAccount() {
+      window.ethereum.removeAllListeners();
+      window.ethereum.on("accountsChanged", async () => {
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const signer = provider.getSigner();
+        const address = await signer.getAddress();
+        setCurrSigner(signer);
+        setCurrAddress(address);
+      });
+    }
+    async function getInitialAddress() {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+      const address = await signer.getAddress();
+      setCurrAddress(address);
+      setCurrSigner(signer)
+    }
+    listenMMAccount();
+    getInitialAddress();
+  }, []);
+
+  useEffect(() => {
+    if (reload !== '') {
+      
+      const getOrder = async () => {
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const orderContract = new ethers.Contract(reload, TransportationOrder.abi, provider);
+        const destinationPort = await orderContract.destinationPort();
+        const originPort = await orderContract.originPort();
+        const client = await orderContract.client();
+        const orderPayout = await orderContract.orderPayout();
+        const cargoType = await orderContract.cargoType();
+        const deadline = await orderContract.deadline();
+        const orderState = await orderContract.orderState();
+        const cargoLoad = await orderContract.cargoLoad();
+        const cargoDetailsOrigin = await orderContract.cargoDetailsOrigin();
+        const cargoDetailsDestination = await orderContract.cargoDetailsDestination();
+        const originGauge = await orderContract.originGauge();
+        const destinationGauge = await orderContract.destinationGauge();
+        const operator = await orderContract.operator();
+        const gaugingSensor = await orderContract.gaugingSensor();
+        const cargoInspectorOrigin = await orderContract.cargoInspectorOrigin();
+        const cargoInspectorDestination = await orderContract.cargoInspectorDestination();
+        setFocusedOrder({
+          address: reload, 
+          originPort: hexToPortName(originPort),
+          destinationPort: hexToPortName(destinationPort),
+          client,
+          orderPayout: hexToInt(orderPayout._hex) / WEI_VAL,
+          cargoType: cargoTypes.get(cargoType),
+          deadline: hexToInt(deadline._hex),
+          orderState,
+          cargoLoad: hexToInt(cargoLoad._hex) / 100,
+          cargoDetailsOrigin,
+          cargoDetailsDestination,
+          originGauge,
+          destinationGauge,
+          operator,
+          gaugingSensor,
+          cargoInspectorDestination,
+          cargoInspectorOrigin
+        });
+      }
+      getOrder();
+      setReload('');
+    }
+  }, [reload]);
+
+  useEffect(() => {
+    
+    getTransportationOrders();
+    
+  }, [currAddress]);
+  
+  useEffect(() => {
+    if (focusedAddr !== '') {
+      const newFocusedOrder = ordersData.find(order => order.address === focusedAddr);
+      setFocusedOrder(newFocusedOrder);
+    }
+  }, [focusedAddr])
 
   const getTransportationOrders = async () => {
+    setLoading(true);
     if (typeof window.ethereum !== 'undefined') {
       try {
         const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -68,23 +155,55 @@ export default function MyOrders() {
             cargoInspectorOrigin
           });
         }
-        //console.log(JSON.stringify({ orders: newOrdersData}));
-        const signer = provider.getSigner();
-        setOrdersData(filterByAddress(newOrdersData, await signer.getAddress()));
+        const filteredOrders = filterByAddress(newOrdersData, currAddress);
+
+        setOrdersData(filteredOrders);
       } catch (err) {
         console.log(err);
       }
-      
+      setLoading(false);
     }
   }
 
-  return (
-    <Grid container spacing={0}>
-      <Grid item xs={10}>
-        {ordersData.map((orderData, index) => 
-          <OrderCard key={index} orderData={orderData}/>
-        )}
-      </Grid>
-    </Grid> 
+  return (   
+    <Grid 
+      item 
+      container 
+      xs={10} 
+      direction="row"
+      justifyContent="center"
+      alignItems="center"
+    >
+      {loading ? (
+        <CircularProgress size={44} className={classes.buttonProgress} />
+      ) : (
+        (ordersData.length === 0) ? (
+          <Typography variant="h5" component="h2">
+            No orders available.
+          </Typography>
+        ) : ( focusedAddr === '' ? (
+          ordersData.map((orderData, index) => 
+            <OrderCardExtra 
+              key={index} 
+              orderData={orderData} 
+              currAddress={currAddress}
+              setReload={setReload}
+              setFocusedAddr={setFocusedAddr}
+            />
+          )) : (
+            
+            <OrderCardExtra 
+              orderData={focusedOrder} 
+              currAddress={currAddress}
+              setReload={setReload}
+              setFocusedAddr={setFocusedAddr}
+              shouldBeExpanded={true}
+              currSigner={currSigner}
+            />
+          )
+        )  
+        )
+      }
+    </Grid>
   );
 }

@@ -11,9 +11,13 @@ import OrderParticipants from './OrderParticipants';
 import InspectionSection from './InspectionSection';
 import GaugingSection from './GaugingSection';
 import OrderDialog from './OrderDialog';
-import {getGaugingOriginButtonText, getInspectionDestinationButtonText, getGaugingDestinationButtonText, getInspectionOriginButtonText, DESTINATION_INSPECTOR, OPERATOR, ORIGIN_INSPECTOR, CLIENT, GAUGER} from '../helper';
+import TransportationOrder from '../artifacts/contracts/TransportationOrder.sol/TransportationOrder.json';
+import TransportationOrderLogger from '../artifacts/contracts/TransportationOrderLogger.sol/TransportationOrderLogger.json';
+import {getGaugingOriginButtonText, getInspectionDestinationButtonText, getGaugingDestinationButtonText, getInspectionOriginButtonText, DESTINATION_INSPECTOR, OPERATOR, ORIGIN_INSPECTOR, CLIENT, GAUGER, orderState, dialogType, LOGGER_ADDR, GAUGING_DETAILS_TEMPL, INSP_DETAILS_TEMPL} from '../helper';
 import clsx from 'clsx';
+import Alert from '@material-ui/lab/Alert';
 import { ethers } from 'ethers';
+import { getData, setData } from '../ddbMethods';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -52,21 +56,144 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 export default function OrderCardExtra(props) {
-  
-  const [open, setOpen] = useState(false);
 
-  const handleClick = () => {
+  const classes = useStyles();
+
+  const [expanded, setExpanded] = useState(props.shouldBeExpanded);
+  const [role, setRole] = useState(OPERATOR);
+  const [currentDialogType, setCurrentDialogType] = useState(0);
+  const [logger, setLogger] = useState();
+  const [loading, setLoading] = useState(false);
+  const [loadingDialog, setLoadingDialog] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [gaugingDetails, setGaugingDetails] = useState(GAUGING_DETAILS_TEMPL);
+  const [inspectionOriginReport, setInspectionOriginReport] = useState(INSP_DETAILS_TEMPL);
+  const [inspectionDestinationReport, setInspectionDestinationReport] = useState(INSP_DETAILS_TEMPL);
+
+
+  const handleClick = async (clickedDialog) => {
+
+    if (clickedDialog === dialogType.SIGN_GAUGE_ORIGIN || 
+      clickedDialog === dialogType.VIEW_GAUGE_ORIGIN) {
+        console.log(props.orderData.address, props.orderData.originGauge);
+        const details = await getData(props.orderData.address, props.orderData.originGauge);
+        setGaugingDetails(JSON.parse(details.Item.data));
+    } else if (clickedDialog === dialogType.SIGN_GAUGE_DESTINATION ||
+      clickedDialog === dialogType.VIEW_GAUGE_DESTINATION) {
+      const details = await getData(props.orderData.address, props.orderData.destinationGauge);
+      setGaugingDetails(JSON.parse(details.Item.data));
+    } else if (clickedDialog === dialogType.VIEW_REPORT_ORIGIN || clickedDialog ===dialogType.SIGN_REPORT_ORIGIN) {
+      const details = await getData(props.orderData.address, props.orderData.cargoDetailsOrigin);
+      setInspectionOriginReport(JSON.parse(details.Item.data));
+    } else if (clickedDialog === dialogType.VIEW_REPORT_DESTINATION || clickedDialog === dialogType.SIGN_REPORT_DESTINATION) {
+      const details = await getData(props.orderData.address, props.orderData.cargoDetailsDestination);
+      setInspectionDestinationReport(JSON.parse(details.Item.data));
+    } 
+  
     setOpen(true);
   };
 
-  const handleClose = (newValue) => {
-    setOpen(false);
-  };
-  const classes = useStyles();
+  const handleCancelOrder = async () => {
 
-  const [expanded, setExpanded] = useState(false);
-  const [role, setRole] = useState(OPERATOR);
-  const [currentDialogType, setCurrentDialogType] = useState(0);
+    const transportationOrder = new ethers.Contract(props.orderData.address, TransportationOrder.abi, props.currSigner);
+    const transaction = await transportationOrder.cancelOrder();
+    await transaction.wait();
+    await delay(2000);
+  
+    
+  };
+
+  const delay = ms => new Promise(res => setTimeout(res, ms));
+
+  const handleClose = async (action) => {
+
+    let newGaugingData = JSON.parse(JSON.stringify(gaugingDetails));
+    setLoadingDialog(true);
+    if (currentDialogType === dialogType.SIGN_GAUGE_ORIGIN && action === "sign") {
+
+      if (newGaugingData.originEmpty.operatorSignature === null) {
+        const newSignature = await props.currSigner.signMessage(JSON.stringify(newGaugingData.originEmpty.reading));
+        newGaugingData.originEmpty.operatorSignature = newSignature;
+
+      } else {
+        const newSignature = await props.currSigner.signMessage(JSON.stringify(newGaugingData.originFull.reading));
+        newGaugingData.originFull.operatorSignature = newSignature;
+      }
+      
+      const data = JSON.stringify(newGaugingData);
+      const hash = ethers.utils.id(data);
+      await setData(props.orderData.address, hash, data);
+
+      const transportationOrder = new ethers.Contract(props.orderData.address, TransportationOrder.abi, props.currSigner);
+      const firstMeasurement = newGaugingData.originFull.operatorSignature === null ? true : false;
+      const transaction = await transportationOrder.signOriginGauge(hash, firstMeasurement);
+      await transaction.wait();
+      await delay(2000);
+    } else if (currentDialogType === dialogType.SIGN_GAUGE_DESTINATION && action === "sign") {
+
+      console.log("Signing destination gauging details");
+      
+      if (newGaugingData.destinationFull.operatorSignature === null) {
+        const newSignature = await props.currSigner.signMessage(JSON.stringify(newGaugingData.destinationFull.reading));
+        newGaugingData.destinationFull.operatorSignature = newSignature;
+
+      } else {
+        const newSignature = await props.currSigner.signMessage(JSON.stringify(newGaugingData.destinationEmpty.reading));
+        newGaugingData.destinationEmpty.operatorSignature = newSignature;
+      }
+      const data = JSON.stringify(newGaugingData);
+      const hash = ethers.utils.id(data);
+      await setData(props.orderData.address, hash, data);
+      
+      const transportationOrder = new ethers.Contract(props.orderData.address, TransportationOrder.abi, props.currSigner);
+      const thirdMeasurement = newGaugingData.destinationEmpty.operatorSignature === null ? true : false;
+      const transaction = await transportationOrder.signDestinationGauge(hash, thirdMeasurement);
+      await transaction.wait();
+      await delay(2000);
+    } else if (action === "sign" && (currentDialogType === dialogType.GENERATE_REPORT_ORIGIN || 
+        currentDialogType === dialogType.SIGN_REPORT_ORIGIN ||
+        currentDialogType === dialogType.GENERATE_REPORT_DESTINATION || 
+        currentDialogType === dialogType.SIGN_REPORT_DESTINATION)) {
+      
+      let report;
+      if (currentDialogType === dialogType.GENERATE_REPORT_ORIGIN || currentDialogType === dialogType.SIGN_REPORT_ORIGIN) {
+        report = JSON.parse(JSON.stringify(inspectionOriginReport));
+      } else {
+        report = JSON.parse(JSON.stringify(inspectionDestinationReport));
+      }
+
+      const newSignature = await props.currSigner.signMessage(JSON.stringify(report.details));
+
+      if (currentDialogType === dialogType.GENERATE_REPORT_ORIGIN || currentDialogType === dialogType.GENERATE_REPORT_DESTINATION) {
+        report.inspectorSignature = newSignature;
+      } else {
+        report.operatorSignature = newSignature;
+      }
+
+      const data = JSON.stringify(report);
+      const hash = ethers.utils.id(data);
+      await setData(props.orderData.address, hash, data);
+      
+      const transportationOrder = new ethers.Contract(props.orderData.address, TransportationOrder.abi, props.currSigner);
+      let transaction; 
+      if (currentDialogType === dialogType.GENERATE_REPORT_ORIGIN) {
+        transaction = await transportationOrder.registerOriginInspectionReport(hash);
+      } else if (currentDialogType === dialogType.SIGN_REPORT_ORIGIN){
+        transaction = await transportationOrder.signOriginInspectionReport(hash);
+      } else if (currentDialogType === dialogType.GENERATE_REPORT_DESTINATION) {
+        transaction = await transportationOrder.registerDestinationInspectionReport(hash);
+      } else {
+        transaction = await transportationOrder.signDestinationInspectionReport(hash);
+      } 
+      await transaction.wait();
+      await delay(2000);
+    }
+    setLoadingDialog(false);
+    setOpen(false);
+    props.setReload(props.orderData.address);
+    
+  };
+ 
 
   const [buttonDetails, setButtonDetails] = useState(
     {
@@ -76,8 +203,6 @@ export default function OrderCardExtra(props) {
       inspectionDestination: getInspectionDestinationButtonText(props.orderData.orderState, role)
     }
   );
-
-  
 
   useEffect(() => {
     const getRoleFromAddr = (address) => {
@@ -93,19 +218,9 @@ export default function OrderCardExtra(props) {
       }
       return role;
     }
-    async function listenMMAccount() {
-      window.ethereum.removeAllListeners();
-      window.ethereum.on("accountsChanged", async () => {
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        const signer = provider.getSigner();
-        const address = await signer.getAddress();
-        const newRole = getRoleFromAddr(address);
-        //console.log("New Role: " + newRole)
-        setRole(newRole);
-      });
-    }
-    listenMMAccount();
-  }, []);
+    setRole(getRoleFromAddr(props.currAddress));
+    
+  }, [props.currAddress]);
 
   useEffect(() => {
     setButtonDetails({
@@ -116,11 +231,42 @@ export default function OrderCardExtra(props) {
     });
   }, [role, props.orderData.orderState]);
 
+  useEffect(() => {
+    const loggerContract = new ethers.Contract(LOGGER_ADDR, TransportationOrderLogger.abi, props.currSigner);
+    setLogger(loggerContract);
+  }, [props.currSigner]);
   
-  
-  
+  const requestGauge = async () => {
+    setLoading(true);
+    console.log(await props.currSigner.getAddress());
+    const orderContract = new ethers.Contract(props.orderData.address, TransportationOrder.abi, props.currSigner);
+    const transaction = await orderContract.requestGauging();
+    await transaction.wait();
+    const state = props.orderData.orderState;
+    if (state === orderState.ASSIGNED || state === orderState.REPORT_ORIGIN_SIGNED) {
+      await logger.once('OriginEmptyGaugeRegistered', async (orderAddr) => action(orderAddr));
+    } else if (state === orderState.LOADED) {
+      await logger.once('OriginFullGaugeRegistered', async (orderAddr) => action(orderAddr));
+    } else if (state === orderState.IN_TRANSIT || state === orderState.REPORT_DESTINATION_SIGNED) {
+      await logger.once('DestinationFullGaugeRegistered', async (orderAddr) => action(orderAddr));
+    } else if (state === orderState.UNLOADED) {
+      await logger.once('DestinationEmptyGaugeRegistered', async (orderAddr) => action(orderAddr));
+    }
+  }
 
+  const action = async (orderAddr) => {
+    if (orderAddr === props.orderData.address) {
+      await delay(2000);
+      setLoading(false);
+      props.setReload(orderAddr);
+    }
+  }
   const handleExpandClick = () => {
+    if (expanded) {
+      props.setFocusedAddr('');
+    } else {
+      props.setFocusedAddr(props.orderData.address);
+    }
     setExpanded(!expanded);
   };
 
@@ -191,6 +337,8 @@ export default function OrderCardExtra(props) {
                 inspectionDestination={buttonDetails.inspectionDestination}
                 handleClick={handleClick}
                 setCurrentDialogType={setCurrentDialogType}
+                cargoDetailsOrigin={props.orderData.cargoDetailsOrigin}
+                cargoDetailsDestination={props.orderData.cargoDetailsDestination}
               />
               </Grid>  
               <Divider variant="middle" />
@@ -200,10 +348,38 @@ export default function OrderCardExtra(props) {
                 destinationGauge={buttonDetails.destinationGauge}
                 handleClick={handleClick}
                 setCurrentDialogType={setCurrentDialogType}
+                requestGauge={requestGauge}
+                loading={loading}
+                originRequestGauge={role === OPERATOR && 
+                  (props.orderData.orderState === orderState.ASSIGNED || 
+                    props.orderData.orderState === orderState.REPORT_ORIGIN_SIGNED ||
+                    props.orderData.orderState === orderState.LOADED)}
+
+                destinationRequestGauge={role === OPERATOR && 
+                  (props.orderData.orderState === orderState.IN_TRANSIT || 
+                    props.orderData.orderState === orderState.REPORT_DESTINATION_SIGNED ||
+                    props.orderData.orderState === orderState.UNLOADED)}
               />
               </Grid>  
               <Divider variant="middle" />
-           
+              {role === OPERATOR &&
+                (
+                <Grid container xs={12} style={{marginTop: 30, marginBottom: 10}}>
+                  <Button
+                    onClick={handleCancelOrder}
+                    aria-expanded={expanded}
+                    aria-label="show more"
+                    color="secondary"
+                    variant="outlined"
+                    style={{marginRight: 40}}  
+                  >
+                    Cancel Order
+                  </Button>
+                  <Alert severity="info" variant="outlined">Canceling the transportation order will return the ethers (Ξ) in escrow to the client.</Alert>
+                  
+              
+                </Grid>)
+              }   
           </CardContent>
         </Collapse>
         <CardActions>
@@ -230,6 +406,12 @@ export default function OrderCardExtra(props) {
           open={open}
           onClose={handleClose}
           dialogType={currentDialogType}
+          gaugingDetails={gaugingDetails}
+          inspectionOriginReport={inspectionOriginReport}
+          inspectionDestinationReport={inspectionDestinationReport}
+          setInspectionOriginReport={setInspectionOriginReport}
+          setInspectionDestinationReport={setInspectionDestinationReport}
+          loadingDialog={loadingDialog}
         />
     </Container>
   );

@@ -6,37 +6,54 @@ import DialogTitle from '@material-ui/core/DialogTitle';
 import DialogContent from '@material-ui/core/DialogContent';
 import DialogActions from '@material-ui/core/DialogActions';
 import Dialog from '@material-ui/core/Dialog';
-import { dialogTypeTitle } from '../helper';
-import { Grid, Typography } from '@material-ui/core';
+import { dialogTypeTitle, INSP_DETAILS_TEMPL } from '../helper';
+import {  Typography, CircularProgress } from '@material-ui/core';
 import GaugeDetails from './dialogContent/GaugeDetails';
 import ReportDetails from './dialogContent/ReportDetails';
 import ReportGeneration from './dialogContent/ReportGeneration';
 
-
+const useStyles = makeStyles((theme) => ({
+  wrapper: {
+    position: 'relative',
+  },
+  buttonProgress: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    marginTop: -14,
+    marginLeft: -12  },
+}));
 
 export default function OrderDialog(props) {
-  const { onClose, value: valueProp, open, dialogType, ...other } = props;
-  const [value, setValue] = useState(valueProp);
-  
-
-  useEffect(() => {
-    if (!open) {
-      setValue(valueProp);
-    }
-  }, [valueProp, open]);
-
- 
+  const { onClose, open, dialogType, inspectionOriginReport, inspectionDestinationReport, setInspectionDestinationReport, setInspectionOriginReport, loadingDialog, ...other } = props; 
 
   const handleCancel = () => {
-    onClose();
+    if (dialogType === 2 || dialogType === 7) {
+      console.log("Closing shop");
+      setInspectionOriginReport(INSP_DETAILS_TEMPL);
+      setInspectionDestinationReport(INSP_DETAILS_TEMPL)
+    }
+    onClose("cancel");
   };
 
-  const handleOk = () => {
-    onClose(value);
+  const handleOk = (action) => {
+ 
+    onClose(action);
   };
 
+  const getIfDisabled = () => {
+    let disabled = false;
+    if (dialogType === 2) {
+      disabled = inspectionOriginReport.details.holds.length === 0 || inspectionOriginReport.details.bargeDID === null;
+    } else {
+      disabled = inspectionDestinationReport.details.holds.length === 0 || inspectionDestinationReport.details.bargeDID === null;
+
+    }
+    return disabled
+  };
+
+  const classes = useStyles();
   
-
   return (
     <Dialog
       maxWidth="md"
@@ -52,38 +69,60 @@ export default function OrderDialog(props) {
       <DialogContent dividers>
       {
         (dialogType === 0 || dialogType === 1 || dialogType === 5 || dialogType === 6) &&
-        <GaugeDetails/>
+        <GaugeDetails 
+          originEmpty={props.gaugingDetails.originEmpty}
+          originFull={props.gaugingDetails.originFull}
+          destinationEmpty={props.gaugingDetails.destinationEmpty}
+          destinationFull={props.gaugingDetails.destinationFull}
+          dialogType={dialogType}
+        />
       }
       {
         (dialogType === 3 || dialogType === 4 || dialogType === 8 || dialogType === 9) &&
-        <ReportDetails/>
+        <ReportDetails
+          inspectionDestinationReport={inspectionDestinationReport}
+          inspectionOriginReport={inspectionOriginReport}
+          dialogType={dialogType}
+        />
       }
       {
         (dialogType === 2 || dialogType === 7) &&
-        <ReportGeneration/>
+        <ReportGeneration
+          inspectionDestinationReport={inspectionDestinationReport}
+          inspectionOriginReport={inspectionOriginReport}
+          setInspectionOriginReport={setInspectionOriginReport}
+          setInspectionDestinationReport={setInspectionDestinationReport}
+          dialogType={dialogType}
+        />
       }
       </DialogContent>
       <DialogActions>
-        <Button autoFocus onClick={handleCancel} color="primary">
+        <Button autoFocus onClick={handleCancel} color="primary" disabled={loadingDialog}>
           Close
         </Button>
         {
           (dialogType === 1 || dialogType === 3 || dialogType === 6 || dialogType === 8) &&
-          <Button onClick={handleOk} color="primary">
-            Sign
-          </Button>
+          <div className={classes.wrapper}>
+            <Button onClick={e => handleOk("sign")} color="primary" disabled={loadingDialog}>
+              Sign
+            </Button>
+            {loadingDialog && <CircularProgress size={24} className={classes.buttonProgress} />}
+          </div>
         }
         {
           (dialogType === 2 || dialogType === 7) &&
-          <Button onClick={handleOk} color="primary">
-            Submit
-          </Button>
+          <div className={classes.wrapper}>
+            <Button onClick={e => handleOk("sign")} color="primary" disabled={loadingDialog || getIfDisabled()}>
+              {"Sign & submit"}
+            </Button>
+            {loadingDialog && <CircularProgress size={24} className={classes.buttonProgress} />}
+          </div>
         }
       </DialogActions>
     </Dialog>
   );
 }
-
+          
 Dialog.defaultProps = {
   
 }

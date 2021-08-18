@@ -14,8 +14,8 @@ import DirectionsBoatTwoToneIcon from '@material-ui/icons/DirectionsBoatTwoTone'
 import TabPanel from './components/TabPanel';
 import OrdersList from './components/OrdersList';
 import { Grid } from '@material-ui/core';
-import OrderCardExtra from './components/OrderCardExtra';
-import OrderDialog from './components/OrderDialog';
+import SignData from './components/SignData';
+import MyOrders from './components/MyOrders';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -67,10 +67,10 @@ export default function App() {
               <OrdersList />
             </Route>
             <Route path="/my-orders">
-              <OrderCardExtra />
+              <MyOrders />
             </Route>
             <Route path="/sign-data">
-              <OrderDialog />
+              <SignData />
             </Route>
           </Switch>
         </Grid>  

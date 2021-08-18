@@ -5,10 +5,11 @@ import { codeToPort, DESTINATION_INSPECTOR, OPERATOR, ORIGIN_INSPECTOR } from '.
 import FilterListRoundedIcon from '@material-ui/icons/FilterListRounded';
 import DateFnsUtils from '@date-io/date-fns';
 import { MuiPickersUtilsProvider, KeyboardDatePicker } from '@material-ui/pickers';
+import RotateLeftIcon from '@material-ui/icons/RotateLeft';
 
 const useStyles = makeStyles({
     container:{
-      paddingLeft: 15,
+      marginLeft: 15,
     },
     textContainer: {
         paddingTop: 2,
@@ -36,9 +37,9 @@ export default function FiltersSection(props) {
 
 
   const filter = () => {
-    
+    props.setRole(filterRole);
     props.filterOrders({
-      role,
+      role: filterRole,
       originPort,
       destinationPort,
       startDate,
@@ -47,8 +48,29 @@ export default function FiltersSection(props) {
     });
   }
 
+  const reset = () => {
+
+    props.filterOrders({
+      role: OPERATOR,
+      originPort: '',
+      destinationPort: '',
+      startDate: null,
+      endDate: null,
+      payoutRange: [props.minPayout, props.maxPayout]
+    });
+
+    props.setRole(OPERATOR);
+    setFilterRole(OPERATOR);
+    setOriginPort('');
+    setDestinationPort('')
+    setStartDate(null);
+    setEndDate(null);
+    setPayoutRange([props.minPayout, props.maxPayout]);
+  }
+
   const classes = useStyles();
-  const [role, setRole] = useState('Operator');
+  
+  const [filterRole, setFilterRole] = useState(OPERATOR);
   const [originPort, setOriginPort] = useState('');
   const [destinationPort, setDestinationPort] = useState('');
   const [startDate, setStartDate] = useState(null);
@@ -63,23 +85,12 @@ export default function FiltersSection(props) {
           xs={12} 
           className={classes.title} 
           direction="row"
-          justifyContent="space-around"
           alignItems="center"
         >
             <Grid item>
               <Typography variant="h6" component="h6">
                   Filters
               </Typography>
-            </Grid>
-            <Grid item>
-              <Button 
-                variant="outlined" 
-                color="primary"
-                onClick={filter}
-                startIcon={<FilterListRoundedIcon />}
-              >
-                Apply
-              </Button>
             </Grid>
         </Grid>
         <Grid item xs={12} className={classes.inputWrapper}>
@@ -89,8 +100,8 @@ export default function FiltersSection(props) {
                     key="role-select"
                     labelId="role-select-label"
                     id="role-select"
-                    value={role}
-                    onChange={ e => setRole(e.target.value)}
+                    value={filterRole}
+                    onChange={ e => setFilterRole(e.target.value)}
                 >   
                     <MenuItem value={OPERATOR}>Operator</MenuItem>
                     <MenuItem value={ORIGIN_INSPECTOR}>Origin port inspector</MenuItem>
@@ -193,6 +204,31 @@ export default function FiltersSection(props) {
                     />
                 </Grid>
             </MuiPickersUtilsProvider>
+        </Grid>
+        <Grid item container xs={12}
+          direction="row"
+          justifyContent="space-around"
+          alignItems="center"
+          style={{marginLeft: -10}}
+        >
+              <Button 
+                variant="outlined"
+                size="small" 
+                color="primary"
+                onClick={reset}
+                startIcon={<RotateLeftIcon />}
+              >
+                Reset
+              </Button>
+              <Button 
+                variant="outlined" 
+                color="primary"
+                size="small"
+                onClick={filter}
+                startIcon={<FilterListRoundedIcon />}
+              >
+                Apply
+              </Button>
         </Grid>
     </Grid>
   );

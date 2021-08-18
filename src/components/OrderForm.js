@@ -60,7 +60,6 @@ export default function OrderForm() {
   const [factoryContract, setFactoryContract] = useState();
   const [gasPrice, setGasPrice] = useState();
   const [loggerContract, setLoggerContract] = useState();
-  const [signerAddr, setSignerAddr] = useState();
 
   const [status, setStatus] = useState();
   const [loading, setLoading] = useState(false);
@@ -69,12 +68,12 @@ export default function OrderForm() {
   const classes = useStyles();
 
   useEffect(() => {
-    const requestAccount = async () => {
+
+    const estimateTransactionCost = async () => {
       await window.ethereum.request({ method: 'eth_requestAccounts' });
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const currentGasPrice = await provider.getGasPrice();
       const signer = provider.getSigner();
-      setSignerAddr(await signer.getAddress());
       const factContract = new ethers.Contract(FACT_ADDR, TransportationOrderFactory.abi, signer);
       let estimatedGasPrice = await factContract.estimateGas.createTransportOrder(
         ethers.utils.hexlify([1, 2, 3, 4, 5]),
@@ -88,7 +87,8 @@ export default function OrderForm() {
       setGasPrice(estimatedGasPrice * currentGasPrice / WEI_VAL);
       setLoggerContract(new ethers.Contract(LOGGER_ADDR, TransportationOrderLogger.abi, signer))
     }
-    requestAccount();
+  
+    estimateTransactionCost();
     
   },[]);
 
@@ -123,7 +123,10 @@ export default function OrderForm() {
       await transaction.wait();
       await loggerContract.once('OrderVerificationResult', async (orderAddr, clientDID, success) => {
         console.log(`OrderVerificationResult: ${success} for order ${orderAddr} with client ${clientDID}`);
-        if (clientDID === signerAddr) {
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const signer = provider.getSigner();
+        const address = await signer.getAddress();
+        if (clientDID === address) {
           if (success) {
             await createTable(orderAddr);
             setStatus({error: false, msg: 'Your order has been succesfully created'});
@@ -144,7 +147,7 @@ export default function OrderForm() {
   }
 
   return (
-    <Grid container item xs={12} sm={8} md={5} lg={4} xl={3}>
+    <Grid container item xs={12} sm={8} md={5} lg={4} xl={4}>
     <Paper className={loading ? classes.formControlLoading : classes.formControl} variant='outlined' elevation={3}>
     <Grid 
       container

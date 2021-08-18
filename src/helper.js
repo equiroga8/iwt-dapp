@@ -14,6 +14,53 @@ export const ORIGIN_INSPECTOR = "Origin port inspector";
 export const CLIENT = "Client";
 export const GAUGER = "Gauger";
 
+export const GAUGING_DETAILS_TEMPL = {
+  originEmpty: {
+      reading: {
+          measurement: null,
+          timestamp: null
+      },
+      gaugerSignature: null,
+      operatorSignature: null
+  },
+  originFull: {
+      reading: {
+          measurement: null,
+          timestamp: null
+      },
+      gaugerSignature: null,
+      operatorSignature: null
+  },
+  destinationFull: {
+      reading: {
+          measurement: null,
+          timestamp: null
+      },
+      gaugerSignature: null,
+      operatorSignature: null
+  },
+  destinationEmpty: {
+      reading: {
+          measurement: null,
+          timestamp: null
+      },
+      gaugerSignature: null,
+      operatorSignature: null
+  }
+};
+
+export const INSP_DETAILS_TEMPL = {
+  details: {
+    holds: [],
+    bargeDID: null
+  },
+  inspectorSignature: null,
+  operatorSignature: null,
+};
+
+export const ADDR_ZERO = ethers.constants.AddressZero;
+export const HASH_ZERO = ethers.constants.HashZero;
+
 export const LOCAL_DDB_SETTINGS = {
   region: 'localhost',
   endpoint: 'http://localhost:8000',
@@ -168,7 +215,7 @@ const getRoleRefinement = (role) => {
   if (role === ORIGIN_INSPECTOR) {
     refinement = 'orderState=1 and cargoInspectorOrigin[1]="0x0000000000000000000000000000000000000000"'
   } else if (role === DESTINATION_INSPECTOR) {
-    refinement = 'orderState=4 and cargoInspectorDestination[1]="0x0000000000000000000000000000000000000000"'
+    refinement = 'orderState=7 and cargoInspectorDestination[1]="0x0000000000000000000000000000000000000000"'
   }
   return refinement;
 }
@@ -210,7 +257,8 @@ export const minPayout = (orders) => {
 };
 
 export const filterByAddress = (orders, address) => {
-  let expression = `[orders[client="${address}" or operator[1]="${address}" or cargoInspectorDestination="${address}" or cargoInspectorOrigin="${address}"]]`;
+ 
+  let expression = `[orders[client="${address}" or operator[1]="${address}" or cargoInspectorDestination[1]="${address}" or cargoInspectorOrigin[1]="${address}"]]`;
   const query = jsonata(expression);
   let filteredOrders = query.evaluate({orders: orders});
   return  filteredOrders ? filteredOrders : [];

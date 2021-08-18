@@ -1,6 +1,6 @@
 import { makeStyles } from '@material-ui/core/styles';
 import { useEffect, useState } from 'react';
-import { Grid, Typography, Checkbox, FormControlLabel, TextField, IconButton, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Paper } from '@material-ui/core';
+import { Grid, Checkbox, FormControlLabel, TextField, IconButton, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Paper } from '@material-ui/core';
 import CheckCircleOutlineIcon from '@material-ui/icons/CheckCircleOutline';
 import AddIcon from '@material-ui/icons/Add';
 import CheckIcon from '@material-ui/icons/Check';
@@ -15,43 +15,67 @@ const useStyles = makeStyles({
 });
 
 export default function ReportGeneration(props) {
+  const { dialogType, inspectionOriginReport, inspectionDestinationReport, setInspectionDestinationReport, setInspectionOriginReport, loadingDialog, ...other } = props; 
 
   const classes = useStyles(); 
   
-  const [rows, setRows] = useState([]);
-  const [bargeDID, setBargeDID] = useState('');
+  
   const [cargoHoldDID, setCargoHoldDID] = useState('');
   const [isClean, setIsClean] = useState(false);
   const [addingRow, setAddingRow] = useState(false);
 
   const deleteRow = (index) => {
-    let newRows = [...rows];
-    newRows.splice(index, 1);
-    setRows(newRows);
+    
+    if (dialogType === 2) {
+      let newInspectionOriginReport = JSON.parse(JSON.stringify(inspectionOriginReport));
+      newInspectionOriginReport.details.holds.splice(index, 1);
+      setInspectionOriginReport(newInspectionOriginReport);
+    } else {
+      let newInspectionDestinationReport = JSON.parse(JSON.stringify(inspectionDestinationReport));
+      newInspectionDestinationReport.details.holds.splice(index, 1);
+      setInspectionDestinationReport(newInspectionDestinationReport);
+    }
   };
 
   const addRow = () => {
-    let newRows = [...rows];
-    newRows.push({cargoHoldDID, isClean});
-    setRows(newRows);
+    if (dialogType === 2) {
+      let newInspectionOriginReport = JSON.parse(JSON.stringify(inspectionOriginReport));
+      newInspectionOriginReport.details.holds.push({cargoHoldDID, isClean});
+      setInspectionOriginReport(newInspectionOriginReport);
+    } else {
+      let newInspectionDestinationReport = JSON.parse(JSON.stringify(inspectionDestinationReport));
+      newInspectionDestinationReport.details.holds.push({cargoHoldDID, isClean});
+      setInspectionDestinationReport(newInspectionDestinationReport);
+    }
     setAddingRow(false);
     setCargoHoldDID('');
     setIsClean(false);
-  }
+  };
+
+  const changeBargeDID = (value) => {
+    if (dialogType === 2) {
+      console.log("changing barge did");
+      let newInspectionOriginReport = JSON.parse(JSON.stringify(inspectionOriginReport));
+      newInspectionOriginReport.details.bargeDID = value;
+      setInspectionOriginReport(newInspectionOriginReport);
+    } else {
+      let newInspectionDestinationReport = JSON.parse(JSON.stringify(inspectionDestinationReport));
+      newInspectionDestinationReport.details.bargeDID = value;
+      setInspectionDestinationReport(newInspectionDestinationReport);
+    }
+  };
+
   return (
     <Grid container spacing={0}>
       <TextField
-        style={{ marginBottom: 40, marginLeft: 16 }}
+        style={{ marginBottom: 40, marginLeft: 16, width: "90%" }}
         id="barge-did"
         label="Barge DID"
         type="text"
-        value={bargeDID}
+        value={dialogType === 2 ? inspectionOriginReport.details.bargeDID : inspectionDestinationReport.details.bargeDID}
         onChange={ e => {
-          setBargeDID(e.target.value)
+          changeBargeDID(e.target.value)
         }}
-        //disabled={cargoType === '' || loading}
-        //error={cargoLoad <= 0}
-        //helperText={cargoLoad <= 0 ? 'Cargo load must be bigger than 0' : ' '}
       />
       <TableContainer>
       <Table className={classes.table} size="small" aria-label="a dense table">
@@ -63,19 +87,36 @@ export default function ReportGeneration(props) {
           </TableRow>
         </TableHead>
         <TableBody>
-          {rows.map((row, index) => (
-            <TableRow key={index}>
-              <TableCell component="th" scope="row">
-                {row.cargoHoldDID}
-              </TableCell>
-              <TableCell >{row.isClean && <CheckCircleOutlineIcon/>}</TableCell>
-              <TableCell >
-                {<IconButton aria-label="delete" onClick={e => deleteRow(index)}>
-                  <DeleteIcon />
-                </IconButton>}
-              </TableCell>
-            </TableRow>
-          ))}
+          {dialogType === 2 ? (
+            inspectionOriginReport.details.holds.map((row, index) => (
+              <TableRow key={index}>
+                <TableCell component="th" scope="row">
+                  {row.cargoHoldDID}
+                </TableCell>
+                <TableCell >{row.isClean && <CheckCircleOutlineIcon/>}</TableCell>
+                <TableCell >
+                  {<IconButton aria-label="delete" onClick={e => deleteRow(index)}>
+                    <DeleteIcon />
+                  </IconButton>}
+                </TableCell>
+              </TableRow>
+            ))
+          ) :
+          (
+            inspectionDestinationReport.details.holds.map((row, index) => (
+              <TableRow key={index}>
+                <TableCell component="th" scope="row">
+                  {row.cargoHoldDID}
+                </TableCell>
+                <TableCell >{row.isClean && <CheckCircleOutlineIcon/>}</TableCell>
+                <TableCell >
+                  {<IconButton aria-label="delete" onClick={e => deleteRow(index)}>
+                    <DeleteIcon />
+                  </IconButton>}
+                </TableCell>
+              </TableRow>
+            ))
+          )}
           {addingRow &&
             <TableRow>
               <TableCell component="th" scope="row">

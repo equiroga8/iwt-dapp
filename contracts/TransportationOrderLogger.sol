@@ -29,10 +29,10 @@ contract TransportationOrderLogger {
         emit OrderAssignmentRequest(_orderAddress, _operatorDID, _uuid);
     }
     
-    event OrderAssigned(address orderAddress, address operatorDID);
+    event OrderAssigned(address orderAddress, address operatorDID, bool success);
     
-    function orderAssignedEvent(address _orderAddress, address _operatorDID) public {
-        emit OrderAssigned(_orderAddress, _operatorDID);
+    function orderAssignedEvent(address _orderAddress, address _operatorDID, bool _success) public {
+        emit OrderAssigned(_orderAddress, _operatorDID, _success);
     }
     
     event InspectorOriginRoleRequest(address orderAddress, address _did, bytes32 uuid);
@@ -41,10 +41,10 @@ contract TransportationOrderLogger {
         emit InspectorOriginRoleRequest(_orderAddress, _inspectorOriginDID, _uuid);
     }
     
-    event InspectorOriginRoleAssigned(address orderAddress, address _did);
+    event InspectorOriginRoleAssigned(address orderAddress, address _did, bool success);
 
-    function inspectorOriginRoleAssignedEvent(address _orderAddress, address _inspectorOriginDID) public {
-        emit InspectorOriginRoleAssigned(_orderAddress, _inspectorOriginDID);
+    function inspectorOriginRoleAssignedEvent(address _orderAddress, address _inspectorOriginDID, bool _success) public {
+        emit InspectorOriginRoleAssigned(_orderAddress, _inspectorOriginDID, _success);
     }
     
     event GaugerRoleRequest(address orderAddress, address _did, bytes32 uuid);
@@ -55,10 +55,10 @@ contract TransportationOrderLogger {
 
     
     
-    event GaugerRoleAssigned(address orderAddress, address _did);
+    event GaugerRoleAssigned(address orderAddress, address _did, bool success);
     
-    function gaugerRoleAssignedEvent(address _orderAddress, address _gaugerDID) public {
-        emit GaugerRoleAssigned(_orderAddress, _gaugerDID);
+    function gaugerRoleAssignedEvent(address _orderAddress, address _gaugerDID, bool _success) public {
+        emit GaugerRoleAssigned(_orderAddress, _gaugerDID, _success);
     }
 
 
@@ -86,10 +86,10 @@ contract TransportationOrderLogger {
         emit InspectorDestinationRoleRequest(_orderAddress, _inspectorDestinationDID, _uuid);
     }
     
-    event InspectorDestinationRoleAssigned(address orderAddress, address _did);
+    event InspectorDestinationRoleAssigned(address orderAddress, address _did, bool success);
 
-    function inspectorDestinationRoleAssignedEvent(address _orderAddress, address _inspectorDestinationDID) public {
-        emit InspectorDestinationRoleAssigned(_orderAddress, _inspectorDestinationDID);
+    function inspectorDestinationRoleAssignedEvent(address _orderAddress, address _inspectorDestinationDID, bool _success) public {
+        emit InspectorDestinationRoleAssigned(_orderAddress, _inspectorDestinationDID, _success);
     }
 
     event DestinationEmptyGaugeRegistered(address orderAddress);

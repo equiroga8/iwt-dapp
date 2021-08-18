@@ -13,13 +13,13 @@ export const createTable = async (tableName) => {
     const params = {
         AttributeDefinitions: [
            {
-          AttributeName: "Credentials", 
+          AttributeName: "key", 
           AttributeType: "S"
          }
         ], 
         KeySchema: [
            {
-          AttributeName: "Credentials", 
+          AttributeName: "key", 
           KeyType: "HASH"
         }
         ], 
@@ -43,13 +43,13 @@ export const uploadCredentialsToDDB = async (tableName, hash, data) => {
     const params = {
         TableName: tableName,
         Item: {
-            credentialsHash: hash,
+            credentialHash: hash,
             data: data
         }
     };
     try {
         const data = await documentClient.put(params).promise();
-        console.log(data);
+        //console.log(data);
     } catch (e) {
         console.log(e);
     }
@@ -61,11 +61,29 @@ export const getData = async (tableName, hash) => {
     const params = {
         TableName: tableName,
         Key: {
-            id: hash
+            "key": hash
         }
     };
     try {
         return await documentClient.get(params).promise();
+    } catch (e) {
+        console.log(e);
+    }
+}
+
+export const setData = async (tableName, hash, data) => {
+    const documentClient = new AWS.DynamoDB.DocumentClient(LOCAL_DDB_SETTINGS);
+    
+    const params = {
+        TableName: tableName,
+        Item: {
+            key: hash,
+            data: data
+        }
+    };
+    try {
+        const data = await documentClient.put(params).promise();
+        console.log(data);
     } catch (e) {
         console.log(e);
     }

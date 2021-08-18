@@ -3,6 +3,7 @@ import { Grid, Typography, Button } from '@material-ui/core';
 import FiberManualRecordOutlinedIcon from '@material-ui/icons/FiberManualRecordOutlined';
 import LocationOnOutlinedIcon from '@material-ui/icons/LocationOnOutlined';
 import SearchIcon from '@material-ui/icons/Search';
+import { HASH_ZERO } from '../helper';
 
 const useStyles = makeStyles({
   container: {
@@ -24,7 +25,7 @@ export default function InspectionSection(props) {
 
   const handleButtonClick = (dialogType) => {
     props.setCurrentDialogType(dialogType);
-    props.handleClick()
+    props.handleClick(dialogType);
   }
   
   return(
@@ -63,7 +64,7 @@ export default function InspectionSection(props) {
         <Grid item >
         <Button 
           variant="outlined" 
-          disabled={props.inspectionOrigin.disabled}
+          disabled={props.inspectionOrigin.disabled }
           onClick={(e) => handleButtonClick(props.inspectionOrigin.dialogType)}  
         > 
           {props.inspectionOrigin.text}
@@ -84,3 +85,8 @@ export default function InspectionSection(props) {
     </Grid>
   );
 }
+
+/*
+|| props.cargoDetailsOrigin === HASH_ZERO
+props.cargoDetailsDestination === HASH_ZERO ? 'No FRI/CLI report available' :  
+*/

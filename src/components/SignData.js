@@ -4,6 +4,7 @@ import { Grid, Typography, TextField, Button } from "@material-ui/core";
 import { ethers } from 'ethers';
 import Alert from '@material-ui/lab/Alert';
 import BorderColorIcon from '@material-ui/icons/BorderColor';
+const EthCrypto = require('eth-crypto');
 
 const useStyles = makeStyles({
   itemContainer: {
@@ -23,9 +24,25 @@ export default function SignData(props) {
     await window.ethereum.request({ method: 'eth_requestAccounts' });
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     const signer = provider.getSigner();
-    const newSignature = await signer.signMessage(payload);
-
     /*
+    console.log("plain payload");
+    console.log(payload);
+    console.log("parsed payload");
+    console.log(JSON.parse(payload));
+    console.log("parsed payload then stringifyed");
+    console.log(JSON.stringify(JSON.parse(payload)));
+    */
+    const newSignature = await signer.signMessage(JSON.stringify(JSON.parse(payload)));
+    /*
+    const messageHash = EthCrypto.hash.keccak256(JSON.stringify(JSON.parse(payload)));
+    const otherSignature = EthCrypto.sign(
+      '0x8166f546bab6da521a8369cab06c5d2b9e46670292d85c875ee9ec20e84ffb61', // privateKey
+      messageHash // hash of message
+    );
+    console.log(otherSignature);
+  
+
+    
     const expectedAddress = await signer.getAddress()
 
     console.log("ISSUING SIGNATURE");
@@ -33,7 +50,7 @@ export default function SignData(props) {
     console.log("SIG      ", newSignature);
     console.log();
 
-    const actualAddress = ethers.utils.verifyMessage(payload, newSignature)
+    const actualAddress = ethers.utils.verifyMessage(JSON.stringify(JSON.parse(payload)), newSignature)
 
     console.log("APPROACH 1")
     console.log("EXPECTED ADDR: ", expectedAddress)
@@ -44,8 +61,8 @@ export default function SignData(props) {
 
     console.log("SIGNATURE VALID:  ", matches)
     console.log()
+    
     */
-
     setSignature(newSignature);
 
   }
@@ -73,7 +90,7 @@ export default function SignData(props) {
             placeholder="Place the payload that you want to sign here"        
             variant="outlined"
             value={payload}
-            onChange={ e => setPayload(e.target.value) }
+            onChange={ e => setPayload(e.target.value)}
           />
         </Grid>
         <Grid  

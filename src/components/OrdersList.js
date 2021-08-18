@@ -3,10 +3,10 @@ import TransportationOrderFactory from '../artifacts/contracts/TransportationOrd
 import TransportationOrder from '../artifacts/contracts/TransportationOrder.sol/TransportationOrder.json';
 import { ethers } from 'ethers';
 import { useState, useEffect } from 'react';
-import { Grid, Divider } from '@material-ui/core';
+import { Grid, CircularProgress, Typography } from '@material-ui/core';
 import OrderCard from './OrderCard';
 import FiltersSection from './FiltersSection';
-import { FACT_ADDR, hexToInt, WEI_VAL, hexToPortName, cargoTypes, refineOrders, minPayout, maxPayout } from '../helper';
+import { FACT_ADDR, hexToInt, WEI_VAL, hexToPortName, cargoTypes, refineOrders, minPayout, maxPayout, OPERATOR } from '../helper';
 
 const useStyles = makeStyles((theme) => ({
 }));
@@ -18,17 +18,19 @@ export default function OrdersList() {
 
   const [ordersData, setOrdersData] = useState([]);
   const [filteredOrders, setFilteredOrders] = useState([]);
-  const [role, setRole] = useState("Operator");
+  const [role, setRole] = useState(OPERATOR);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => getTransportationOrders(), []);
   // Esto hay que revisarlo
-  useEffect(() => setFilteredOrders(refineOrders(ordersData, {role: "Operator"})), [ordersData]);
+  useEffect(() => setFilteredOrders(refineOrders(ordersData, {role: OPERATOR})), [ordersData]);
 
   const filterOrders = (refinements) => {
     setFilteredOrders(refineOrders(ordersData, refinements));
   }
 
   const getTransportationOrders = async () => {
+    setLoading(true);
     if (typeof window.ethereum !== 'undefined') {
       try {
         const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -80,7 +82,7 @@ export default function OrdersList() {
       } catch (err) {
         console.log(err);
       }
-      
+      setLoading(false);
     }
   }
 
@@ -91,13 +93,29 @@ export default function OrdersList() {
           filterOrders={filterOrders}
           minPayout={minPayout(ordersData)}
           maxPayout={maxPayout(ordersData)}
+          role={role}
+          setRole={setRole}
         />
       </Grid>
-      <Divider orientation="vertical" flexItem />
-      <Grid item xs={10}>
-        {filteredOrders.map((orderData, index) => 
-          <OrderCard key={index} orderData={orderData} role={role}/>
+      
+      <Grid item container xs={10} direction="row"
+  justifyContent="center"
+  alignItems="center">
+        {loading ? (
+          <CircularProgress size={44} className={classes.buttonProgress} />
+        ) : (
+          filteredOrders.length === 0 ? (
+            <Typography variant="h5" component="h2">
+              No orders available.
+            </Typography>
+          ) : (
+            filteredOrders.map((orderData, index) => 
+              <OrderCard key={index} orderData={orderData} role={role}/>
+            )
+          )
         )}
+        
+        
       </Grid>
     </Grid> 
   );

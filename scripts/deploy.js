@@ -69,12 +69,12 @@ const digitalCredentials = [
     recoveryAddress: '0xaC08351626350A22eD90d28A85a46018763f60F9'
   },
   {
-    path: 'credentials/inspector/AM-Cargo-Inspector-Licence.txt',
+    path: 'credentials/inspector/D-Cargo-Inspector-Licence.txt',
     issuerNumber: 17,
     recoveryAddress: '0xa76958A587001b645c49e19BAa0D79DDE32cC991'
   },
   {
-    path: 'credentials/inspector/MM-Cargo-Inspector-Licence.txt',
+    path: 'credentials/inspector/O-Cargo-Inspector-Licence.txt',
     issuerNumber: 17,
     recoveryAddress: '0xa74B61C60546273C0a3Fca5dc36263b860AE3C36'
   },
@@ -107,11 +107,12 @@ const addCredentialSchemas = async (provider, didmSystem) => {
 
 const sumbitCredentialRecords = async (provider, didmSystem) => {
   for (let cred of digitalCredentials){
-    let credential = fs.readFileSync(cred.path, 'utf8');
-    let credentialHash = ethers.utils.id(credential);
+    let vc = fs.readFileSync(cred.path, 'utf8');
+    //console.log(typeof credential);
+    let vcHash = ethers.utils.id(JSON.stringify(JSON.parse(vc)));
     let signer = provider.getSigner(cred.issuerNumber);
     let didmSystemAsSigner = didmSystem.connect(signer);
-    await didmSystemAsSigner.createDCRecord(credentialHash, cred.recoveryAddress);
+    await didmSystemAsSigner.createDCRecord(vcHash, cred.recoveryAddress);
     
   }
   console.log("Credential records added to DIDM system.")
@@ -149,7 +150,7 @@ async function main() {
 
   const provider = new ethers.providers.JsonRpcProvider();
 
-  await createDIDs([0, 1, 3, 4, 5, 14, 15, 16, 17, 18, 19], provider, didmSystem);
+  await createDIDs([0, 1, 2, 3, 4, 5, 14, 15, 16, 17, 18, 19], provider, didmSystem);
   await addCredentialSchemas(provider, didmSystem);
   await sumbitCredentialRecords(provider, didmSystem);
 
