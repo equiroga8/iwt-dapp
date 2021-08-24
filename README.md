@@ -13,11 +13,11 @@ Unfortunately, DLT suffers the same problem as the internet: its users are anony
 
 # Installation
 
-This dApp was tested using Ubuntu 20.04.3 LTS. THe following dependencies need to be installed previously:
+This dApp was tested using Ubuntu 20.04.3 LTS. Node, npm and java need to be installed previously for it to work these are the versions used:
 
 - Node: 15.0.1
 - npm: 7.0.3
-- Java openjdk 11.0.11 (Can be 8 or higher version)
+- Java openjdk 11.0.11 (Can be 8 or higher)
 
 Clone the repository:
 
