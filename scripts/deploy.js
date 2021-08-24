@@ -3,11 +3,20 @@
 //
 // When running the script with `hardhat run <script>` you'll find the Hardhat
 // Runtime Environment's members available in the global scope.
-const { hash } = require("eth-crypto");
 const hre = require("hardhat");
 const fs = require('fs')
-
+const AWS = require('aws-sdk');
 const ethers = hre.ethers;
+
+AWS.config.update({
+    accessKeyId: "YOURKEY",
+    secretAccessKey: "YOURSECRET",
+});
+
+const LOCAL_DDB_SETTINGS = {
+  region: 'localhost',
+  endpoint: 'http://localhost:8000',
+}
 
 // 5 templates
 const credentialTemplates = [{
@@ -118,6 +127,38 @@ const sumbitCredentialRecords = async (provider, didmSystem) => {
   console.log("Credential records added to DIDM system.")
 }
 
+const createCredentialsTable = async () => {
+
+  const ddb = new AWS.DynamoDB(LOCAL_DDB_SETTINGS);
+  
+  const params = {
+      AttributeDefinitions: [
+          {
+        AttributeName: "credentialHash", 
+        AttributeType: "S"
+        }
+      ], 
+      KeySchema: [
+          {
+        AttributeName: "credentialHash", 
+        KeyType: "HASH"
+      }
+      ], 
+      ProvisionedThroughput: {
+        ReadCapacityUnits: 5, 
+        WriteCapacityUnits: 5
+      }, 
+      TableName: "Credentials"
+      };
+
+  try {
+      await ddb.createTable(params).promise();
+  } catch (e) {
+      console.log(e);
+  }
+
+}
+
 async function main() {
   // Hardhat always runs the compile task when running scripts with its command
   // line interface.
@@ -125,6 +166,9 @@ async function main() {
   // If this script is run directly using `node` you may want to call compile 
   // manually to make sure everything is compiled
   // await hre.run('compile');
+
+  // Create credentials table 
+  await createCredentialsTable();
 
   // We get the contract to deploy
   const TransportationOrderFactory = await hre.ethers.getContractFactory("TransportationOrderFactory");
