@@ -1,3 +1,4 @@
+
 # IWT dApp
 
 The concept of identity has always been fundamental to human activities, it is a combination of ones physical and behavioural traits and can be used to effectively recognise somebody. Over the last couple of decades, the digital world has become more prevalent and there has also been an increase in the amount of devices connected to the internet. The concept of identity has naturally transitioned to an online context in the form of digital identity, which includes digital characteristics, digital behaviour, pieces of physical identity, and personal information. Digital identity can represent entities such as people, organizations, machines or even objects in a digital setting.
@@ -33,6 +34,19 @@ Give execution permissions to the scripts:
 To start up the dApp:
 
     ./init.sh
+    
+# Set up
+
+[Metamask](https://metamask.io/download.html) needs to be installed on your chrome browser previously. Once it's installed you need to add the accounts of out main actors. To do this open the Metamask extension, click on the avatar in the top right corner and click on import account. Here you have to paste a private key. You will need to do this 4 times for the following actors:
+
+- Client: 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+- Operator: 0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a
+- Origin Inspector: 0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6
+- Destination Inspector: 0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a
+
+These accounts are only used in a test-net setting. You can change the name of the account by clicking on the three vertical dots, then on account details and edit the name. 
+
+Every time you restart the test-net you need to reset the accounts. You can do this, by clicking on the avatar in the top right corner, then on settings, advanced and lastly on Reset Account. This has to be done for the 4 accounts.
 
 # Teardown
 
