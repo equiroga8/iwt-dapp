@@ -1,70 +1,55 @@
-# Getting Started with Create React App
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# IWT dApp
 
-## Available Scripts
+The concept of identity has always been fundamental to human activities, it is a combination of ones physical and behavioural traits and can be used to effectively recognise somebody. Over the last couple of decades, the digital world has become more prevalent and there has also been an increase in the amount of devices connected to the internet. The concept of identity has naturally transitioned to an online context in the form of digital identity, which includes digital characteristics, digital behaviour, pieces of physical identity, and personal information. Digital identity can represent entities such as people, organizations, machines or even objects in a digital setting.
 
-In the project directory, you can run:
+To associate entities with their respective digital identities, digital identity management systems are employed. They are used to identify entities on the internet in a secure way and are commonly utilized for online authentication, digital signatures, physical access, as well as record keeping. The most common models of identity management systems are centralized, which deprive the original owners of the control and protection over their identities and are therefore exposed to data breaches and privacy loss.
 
-### `npm start`
+One of the most recent digital identity management models is self-sovereign identity (SSID). It is a digital movement that recognizes that an entity should have complete control over its digital identity and data without the intervention of administrative authorities. SSID can be used in conjunction with distributed ledger technologies (DLT) to enable a decentralized solution, that is, a decentralized identity management (DIDM) system.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+There are many business processes in industry sectors that involve multiple stakeholders and machines that could potentially benefit from DIDM. One of them is inland waterway transport (IWT). Inland waterway transport is a competitive alternative to road and rail transport of cargo. In particular, it offers a safer and environment-friendly alternative in terms of both energy consumption and noise emissions. In this use case, different stakeholders have to exchange information in order to manage the transportation of goods. The value of the information is based on the authenticity of the information.
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+Unfortunately, DLT suffers the same problem as the internet: its users are anonymous and we do not know with whom we communicate and cooperate. Besides the potential anonymity of business partners, assessment and assurance of information quality is also an added challenge. Once the trustworthiness of a business cooperation is founded in information, integrity of this information is essential and specific knowledge about the identity of our communication partner delivering information is compulsory. Also, a mechanism to govern the accessibility of process information that occurs during the transportation of goods on a waterway is needed.
 
-### `npm test`
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+# Installation
 
-### `npm run build`
+This dApp was tested using Ubuntu 20.04.3 LTS. Node, npm and java need to be installed previously for it to work these are the versions used:
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+- Node: 15.0.1
+- npm: 7.0.3
+- Java openjdk 11.0.11 (Can be 8 or higher)
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+Clone the repository:
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+    git clone https://github.com/equiroga8/iwt-dapp.git
 
-### `npm run eject`
+Give execution permissions to the scripts:
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+    cd iwt-dapp
+    chmod +x init.sh cleanup.sh
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+# Startup
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+To start up the dApp:
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+    ./init.sh
+    
+# Set up
 
-## Learn More
+[Metamask](https://metamask.io/download.html) needs to be installed on your chrome browser previously. Once it's installed you need to add the accounts of out main actors. To do this open the Metamask extension, click on the avatar in the top right corner and click on import account. Here you have to paste a private key. You will need to do this 4 times for the following actors:
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+- Client: 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+- Operator: 0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a
+- Origin Inspector: 0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6
+- Destination Inspector: 0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+These accounts are only used in a test-net setting. You can change the name of the account by clicking on the three vertical dots, then on account details and edit the name. 
 
-### Code Splitting
+Every time you restart the test-net you need to reset the accounts. You can do this, by clicking on the avatar in the top right corner, then on settings, advanced and lastly on Reset Account. This has to be done for the 4 accounts.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+# Teardown
 
-### Analyzing the Bundle Size
+To close all the services at once:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+    ./cleanup.sh
