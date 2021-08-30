@@ -1,5 +1,8 @@
+import { encrypt } from 'eth-sig-util';
 import { ethers } from 'ethers';
 const jsonata = require("jsonata");
+const axios = require('axios');
+const EthCrypto = require('eth-crypto');
 
 export const WEI_VAL = 1000000000000000000;
 export const DEC_PLACES_REGEX = /^\d+(\.\d{0,2})?$/;
@@ -477,3 +480,120 @@ export const getGaugingDestinationButtonText = (actualRole, state) => {
   }
   return buttonDetails;
 }
+
+const getPublicKey = async (currentAddress) => {
+  console.log("Start publicKey");
+  let publicKey;
+  await window.ethereum.request({
+    method: 'eth_getEncryptionPublicKey',
+    params: [currentAddress], // you must have access to the specified account
+  })
+  .then((result) => {
+    publicKey = result;
+  })
+  .catch((error) => {
+    if (error.code === 4001) {
+      // EIP-1193 userRejectedRequest error
+      console.log("We can't encrypt anything without the key.");
+    } else {
+      console.error(error);
+    }
+  });
+  console.log("End publicKey");
+  return publicKey;
+};
+
+
+const doChallenge = async (challenge, currentAddress) => {
+  console.log("Start doCHallenge");
+  let message;
+  await window.ethereum.request({
+    method: 'eth_decrypt',
+    params: [challenge, currentAddress],
+  })
+  .then((decryptedMessage) => {
+    message = decryptedMessage;
+  })
+  .catch((error) => console.log(error.message));
+  console.log("End doChallenge");
+  return message
+};
+
+const getChallenge = async (orderAddr, currAddress, pubKey) => {
+  console.log("Start getCHallenge");
+  let challengeResponse;
+  try {
+    challengeResponse = await axios.post('http://localhost:3004/challenge', {
+      orderAddr,
+      did: currAddress,
+      publicKey: pubKey
+    });
+  } catch (error) {
+    console.log(error);
+  }
+  console.log("End get challenge");
+  return challengeResponse.data.challenge;
+};
+
+const encryptChallenge = async (challengeString) => {
+  // Encrypt data with off-chain's pub key
+  console.log("Start encryptCHallenge");
+  const encrypted = await EthCrypto.encryptWithPublicKey(
+    VERIFIER_PUB_Key, 
+    JSON.stringify(challengeString)
+  );
+  console.log("End decryptChallenge");
+  return EthCrypto.cipher.stringify(encrypted);
+};
+
+const writeDataRequest = async (orderAddr, did, encryptedChallenge, data) => {
+
+  const dataUuid = ethers.utils.id(data);
+  console.log("Start request");
+  await axios.post('http://localhost:3004/write', {
+    orderAddr,
+    did,
+    challenge: encryptedChallenge,
+    uuid: dataUuid,
+    data,
+  });
+  console.log("End request");
+};
+
+export const writeData = async (currAddress, orderAddr, data) => {
+  console.log("Start write data");
+  const pubKey = await getPublicKey(currAddress);
+
+  const challenge = await getChallenge(orderAddr, currAddress, pubKey);
+
+  const challengeString = await doChallenge(challenge, currAddress);
+
+  const encryptedChallenge = await encryptChallenge(challengeString);
+  console.log("End write data");
+  await writeDataRequest(orderAddr, currAddress, encryptedChallenge, data);
+  
+};
+
+const readDataRequest = async (orderAddr, did, encryptedChallenge, uuid) => {
+
+  return await axios.post('http://localhost:3004/read', {
+    orderAddr,
+    did,
+    challenge: encryptedChallenge,
+    uuid
+  });
+
+};
+
+export const readData = async (currAddress, orderAddr, uuid) => {
+
+  const pubKey = await getPublicKey(currAddress);
+
+  const challenge = await getChallenge(orderAddr, currAddress, pubKey);
+
+  const challengeString = await doChallenge(challenge, currAddress);
+
+  const encryptedChallenge = await encryptChallenge(challengeString);
+  
+  return await readDataRequest(orderAddr, currAddress, encryptedChallenge, uuid);
+};

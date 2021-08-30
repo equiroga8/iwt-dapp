@@ -4,17 +4,22 @@ const TransportationOrder = require('../src/artifacts/contracts/TransportationOr
 const EthCrypto = require('eth-crypto');
 const { ethers } = require("ethers");
 const AWS = require('aws-sdk');
-const http = require('http');
-
+var express = require('express');
+var app = express();
+var cors = require('cors');
+const ethUtil = require('ethereumjs-util');
+const sigUtil = require('eth-sig-util');
 
 AWS.config.update({
     accessKeyId: "YOURKEY",
     secretAccessKey: "YOURSECRET",
 });
-
+const PORT = 3004;
 const LOGGER_ADDR = '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512';
 const DIDM_ADDR = '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0';
 const FAKE_PRIVATE_KEY = '0xdf57089febbacf7ba0bc227dafbffa9fc08a93fdc68e1e42411a14efcf23656e';
+
+const challengeStrings = new Map();
 
 const provider = new ethers.providers.JsonRpcProvider();
 // Verifier account
@@ -38,6 +43,46 @@ const getData = async (tableName, hash) => {
     };
     try {
         return await documentClient.get(params).promise();
+    } catch (e) {
+        console.log(e);
+    }
+}
+
+const readData = async (tableName, hash) => {
+    const documentClient = new AWS.DynamoDB.DocumentClient({
+        region: 'localhost',
+        endpoint: 'http://localhost:8000',
+    });
+    
+    const params = {
+        TableName: tableName,
+        Key: {
+            "key": hash
+        }
+    };
+    try {
+        return await documentClient.get(params).promise();
+    } catch (e) {
+        console.log(e);
+    }
+}
+
+const setData = async (tableName, hash, data) => {
+    const documentClient = new AWS.DynamoDB.DocumentClient({
+        region: 'localhost',
+        endpoint: 'http://localhost:8000',
+    });
+    
+    const params = {
+        TableName: tableName,
+        Item: {
+            key: hash,
+            data: data
+        }
+    };
+    try {
+        const data = await documentClient.put(params).promise();
+        console.log(data);
     } catch (e) {
         console.log(e);
     }
@@ -217,16 +262,110 @@ const checkCredentials = async (requiredCredentials, decryptedCredentials, did) 
     return result && requiredCredentials.length === 0;;
 };
 
+const makeid = (length) => {
+    var result           = '';
+    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    var charactersLength = characters.length;
+    for ( var i = 0; i < length; i++ ) {
+      result += characters.charAt(Math.floor(Math.random() * 
+ charactersLength));
+   }
+   return result;
+}
 
-const hostname = '127.0.0.1';
-const port = 3002;
+app.use(cors());
 
-const server = http.createServer((req, res) => {
-  res.statusCode = 200;
-  res.setHeader('Content-Type', 'text/plain');
-  res.end('Hello World');
+app.use(
+    express.urlencoded({
+        extended: true
+    })
+);
+
+app.use(express.json());
+
+app.post('/challenge', async (req, res) => {
+    console.log(`Recieved a challenge request from ${req.body.did} for order ${req.body.orderAddr} with public key ${req.body.publicKey}`);
+    // Fetch participants and check dids
+    const did = req.body.did;
+    const transportationOrder = new ethers.Contract(req.body.orderAddr, TransportationOrder.abi, signer);
+    const operator = await transportationOrder.operator();
+    const cargoInspectorOrigin = await transportationOrder.cargoInspectorOrigin();
+    const cargoInspectorDestination = await transportationOrder.cargoInspectorDestination();
+    
+    //const address = EthCrypto.publicKey.toAddress(req.body.publicKey.substring(2));
+    
+    if ((did === operator[1] || did === cargoInspectorDestination[1] || did === cargoInspectorOrigin[1])) {
+        // Generate random string;
+        const challenge = makeid(15);
+        challengeStrings.set(did, challenge);
+        // Encrypt it with did public key
+        const encryptedMessage = ethUtil.bufferToHex(
+            Buffer.from(
+              JSON.stringify(
+                sigUtil.encrypt(
+                    req.body.publicKey,
+                  { data: challenge },
+                  'x25519-xsalsa20-poly1305'
+                )
+              ),
+              'utf8'
+            )
+          );
+        res.json({challenge: encryptedMessage});
+
+    } else {
+        res.json({message: "Failed"});
+    }
+    
 });
 
-server.listen(port, hostname, () => {
-  console.log(`Server running at http://${hostname}:${port}/`);
+
+app.post('/write', async (req, res) => {
+    console.log(`Recieved a challenge response from ${req.body.did} to write data with uuid ${req.body.uuid}.`);
+
+    const did = req.body.did;
+    const orderAddress = req.body.orderAddr;
+    const uuid = req.body.uuid;
+    const data = req.body.data;
+    const challengeEncrypted = req.body.challenge;
+
+    // Decrypt challenge
+    const encryptedObject = EthCrypto.cipher.parse(challengeEncrypted);
+    const challenge = await EthCrypto.decryptWithPrivateKey(FAKE_PRIVATE_KEY, encryptedObject);
+
+    // Check if challenge string is the same
+    if (challengeStrings.get(did) === JSON.parse(challenge)) {
+        await setData(orderAddress, uuid, data);
+        res.status(200).send('Challenge completed');
+        console.log(`Challenge completed. Data with uuid ${req.body.uuid} written to database`);
+    } else {
+        res.status(400).send('Bad Request');
+    }
+});
+
+app.post('/read', async (req, res) => {
+    console.log(`Recieved a challenge response from ${req.body.did} to read data with uuid ${req.body.uuid}.`);
+
+    const did = req.body.did;
+    const orderAddress = req.body.orderAddr;
+    const uuid = req.body.uuid;
+    const challengeEncrypted = req.body.challenge;
+    
+    // Decrypt challenge
+    const encryptedObject = EthCrypto.cipher.parse(challengeEncrypted);
+    const challenge = await EthCrypto.decryptWithPrivateKey(FAKE_PRIVATE_KEY, encryptedObject);
+    
+    // Check if challenge string is the same
+    if (challengeStrings.get(did) === JSON.parse(challenge)) {   
+        const response = await readData(orderAddress, uuid);
+        res.json({response})
+        console.log(`Challenge completed. Data with uuid ${req.body.uuid} sent.`);
+    } else {
+        console.log(`Challenge failed.`);
+        res.status(400).send('Challenge failed');
+    }
+});
+
+app.listen(PORT, function () {
+    console.log('Listening on port ' + PORT + '!');
 });

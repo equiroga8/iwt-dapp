@@ -13,11 +13,12 @@ import GaugingSection from './GaugingSection';
 import OrderDialog from './OrderDialog';
 import TransportationOrder from '../artifacts/contracts/TransportationOrder.sol/TransportationOrder.json';
 import TransportationOrderLogger from '../artifacts/contracts/TransportationOrderLogger.sol/TransportationOrderLogger.json';
-import {getGaugingOriginButtonText, getInspectionDestinationButtonText, getGaugingDestinationButtonText, getInspectionOriginButtonText, DESTINATION_INSPECTOR, OPERATOR, ORIGIN_INSPECTOR, CLIENT, GAUGER, orderState, dialogType, LOGGER_ADDR, GAUGING_DETAILS_TEMPL, INSP_DETAILS_TEMPL} from '../helper';
+import {getGaugingOriginButtonText, getInspectionDestinationButtonText, getGaugingDestinationButtonText, getInspectionOriginButtonText, DESTINATION_INSPECTOR, OPERATOR, ORIGIN_INSPECTOR, CLIENT, GAUGER, orderState, dialogType, LOGGER_ADDR, GAUGING_DETAILS_TEMPL, INSP_DETAILS_TEMPL, writeData, readData} from '../helper';
 import clsx from 'clsx';
 import Alert from '@material-ui/lab/Alert';
 import { ethers } from 'ethers';
-import { getData, setData } from '../ddbMethods';
+
+
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -75,32 +76,34 @@ export default function OrderCardExtra(props) {
 
     if (clickedDialog === dialogType.SIGN_GAUGE_ORIGIN || 
       clickedDialog === dialogType.VIEW_GAUGE_ORIGIN) {
-        console.log(props.orderData.address, props.orderData.originGauge);
-        const details = await getData(props.orderData.address, props.orderData.originGauge);
-        setGaugingDetails(JSON.parse(details.Item.data));
+        // HERE READ
+        const details = await readData(props.currAddress, props.orderData.address, props.orderData.originGauge);
+        setGaugingDetails(JSON.parse(details.data.response.Item.data));
     } else if (clickedDialog === dialogType.SIGN_GAUGE_DESTINATION ||
       clickedDialog === dialogType.VIEW_GAUGE_DESTINATION) {
-      const details = await getData(props.orderData.address, props.orderData.destinationGauge);
-      setGaugingDetails(JSON.parse(details.Item.data));
+      // HERE READ
+      const details = await readData(props.currAddress, props.orderData.address, props.orderData.destinationGauge);
+      setGaugingDetails(JSON.parse(details.data.response.Item.data));
     } else if (clickedDialog === dialogType.VIEW_REPORT_ORIGIN || clickedDialog ===dialogType.SIGN_REPORT_ORIGIN) {
-      const details = await getData(props.orderData.address, props.orderData.cargoDetailsOrigin);
-      setInspectionOriginReport(JSON.parse(details.Item.data));
+      // HERE READ
+      const details = await readData(props.currAddress, props.orderData.address, props.orderData.cargoDetailsOrigin);
+      setInspectionOriginReport(JSON.parse(details.data.response.Item.data));
     } else if (clickedDialog === dialogType.VIEW_REPORT_DESTINATION || clickedDialog === dialogType.SIGN_REPORT_DESTINATION) {
-      const details = await getData(props.orderData.address, props.orderData.cargoDetailsDestination);
-      setInspectionDestinationReport(JSON.parse(details.Item.data));
+      // HERE READ
+      const details = await readData(props.currAddress, props.orderData.address, props.orderData.cargoDetailsDestination);
+      setInspectionDestinationReport(JSON.parse(details.data.response.Item.data));
     } 
   
     setOpen(true);
   };
 
   const handleCancelOrder = async () => {
-
+    
     const transportationOrder = new ethers.Contract(props.orderData.address, TransportationOrder.abi, props.currSigner);
     const transaction = await transportationOrder.cancelOrder();
     await transaction.wait();
     await delay(2000);
-  
-    
+
   };
 
   const delay = ms => new Promise(res => setTimeout(res, ms));
@@ -119,19 +122,20 @@ export default function OrderCardExtra(props) {
         const newSignature = await props.currSigner.signMessage(JSON.stringify(newGaugingData.originFull.reading));
         newGaugingData.originFull.operatorSignature = newSignature;
       }
-      
+      // HERE WRITE
       const data = JSON.stringify(newGaugingData);
       const hash = ethers.utils.id(data);
-      await setData(props.orderData.address, hash, data);
-
+      try {
+        await writeData(props.currAddress, props.orderData.address, data);
+      } catch (error) {
+        console.log(error)
+      }
       const transportationOrder = new ethers.Contract(props.orderData.address, TransportationOrder.abi, props.currSigner);
       const firstMeasurement = newGaugingData.originFull.operatorSignature === null ? true : false;
       const transaction = await transportationOrder.signOriginGauge(hash, firstMeasurement);
       await transaction.wait();
       await delay(2000);
     } else if (currentDialogType === dialogType.SIGN_GAUGE_DESTINATION && action === "sign") {
-
-      console.log("Signing destination gauging details");
       
       if (newGaugingData.destinationFull.operatorSignature === null) {
         const newSignature = await props.currSigner.signMessage(JSON.stringify(newGaugingData.destinationFull.reading));
@@ -141,9 +145,10 @@ export default function OrderCardExtra(props) {
         const newSignature = await props.currSigner.signMessage(JSON.stringify(newGaugingData.destinationEmpty.reading));
         newGaugingData.destinationEmpty.operatorSignature = newSignature;
       }
+      // HERE WRITE
       const data = JSON.stringify(newGaugingData);
       const hash = ethers.utils.id(data);
-      await setData(props.orderData.address, hash, data);
+      await writeData(props.currAddress, props.orderData.address, data);
       
       const transportationOrder = new ethers.Contract(props.orderData.address, TransportationOrder.abi, props.currSigner);
       const thirdMeasurement = newGaugingData.destinationEmpty.operatorSignature === null ? true : false;
@@ -169,10 +174,10 @@ export default function OrderCardExtra(props) {
       } else {
         report.operatorSignature = newSignature;
       }
-
+      // HERE WRITE
       const data = JSON.stringify(report);
       const hash = ethers.utils.id(data);
-      await setData(props.orderData.address, hash, data);
+      await writeData(props.currAddress, props.orderData.address, data);
       
       const transportationOrder = new ethers.Contract(props.orderData.address, TransportationOrder.abi, props.currSigner);
       let transaction; 
@@ -238,7 +243,6 @@ export default function OrderCardExtra(props) {
   
   const requestGauge = async () => {
     setLoading(true);
-    console.log(await props.currSigner.getAddress());
     const orderContract = new ethers.Contract(props.orderData.address, TransportationOrder.abi, props.currSigner);
     const transaction = await orderContract.requestGauging();
     await transaction.wait();

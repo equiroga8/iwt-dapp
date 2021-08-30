@@ -11,8 +11,7 @@ AWS.config.update({
 });
 
 const LOGGER_ADDR = '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512';
-const FAKE_PRIVATE_KEY = '0xdf57089febbacf7ba0bc227dafbffa9fc08a93fdc68e1e42411a14efcf23656e';
-const CREDENTIAL_PATH = '../credentials/gauger/Gauge-Calibration.txt';
+const CREDENTIAL_PATH = 'credentials/gauger/Gauge-Calibration.txt';
 const LOCAL_DDB_SETTINGS = { region: 'localhost', endpoint: 'http://localhost:8000' };
 const VERIFIER_PUB_Key = '7bf824b28c4bf11ce553fa746a18754949ab4959e2ea73465778d14179211f8c87f456ff40773aafed961a226e0bfa251547013a81c24951a733f65cfed8dc5e';
 const GAUGING_DATA_TEMPL = {

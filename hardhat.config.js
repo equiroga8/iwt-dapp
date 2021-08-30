@@ -13,8 +13,13 @@ module.exports = {
   },
   networks: {
     hardhat: {
-      chainId: 1337
+      chainId: 1337,
+      /*
+      mining: {
+        auto: false,
+        interval: 13310
+      }
+      */
     }
   }
 };
-

@@ -1,6 +1,6 @@
 import { makeStyles } from '@material-ui/core/styles';
 import { Grid, Typography, Fab, CircularProgress } from '@material-ui/core';
-import { hashObjects, OPERATOR } from '../helper';
+import { OPERATOR } from '../helper';
 import CloudDoneIcon from '@material-ui/icons/CloudDone';
 import CloudUploadOutlinedIcon from '@material-ui/icons/CloudUploadOutlined';
 
